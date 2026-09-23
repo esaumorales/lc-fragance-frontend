@@ -31,12 +31,31 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: "CUSTOMER" | "ADMIN";
+  role: "CUSTOMER" | "ADMIN" | "SUPERADMIN";
 };
 
 export type AuthResponse = {
   accessToken: string;
   user: AuthUser;
+};
+
+// Un admin no recibe sesion al acertar la contraseña: recibe esto y tiene que
+// completar el codigo que le llega al correo.
+export type DesafioSegundoFactor = {
+  requiereCodigo: true;
+  desafioId: string;
+  correoEnviado: boolean;
+};
+
+export type ResultadoDeLogin = AuthResponse | DesafioSegundoFactor;
+
+export type Administrador = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "SUPERADMIN";
+  isActive: boolean;
+  createdAt: string;
 };
 
 export type CartItem = {

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/atoms/Icon";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/lib/auth-context";
+import { esSuperadmin } from "@/lib/roles";
 
 const links = [
   { href: "/admin", label: "Resumen", icon: "mdi:view-dashboard-outline" },
@@ -11,8 +13,17 @@ const links = [
   { href: "/admin/categorias", label: "Categorías", icon: "mdi:shape-outline" },
 ];
 
+// Solo el dueño la ve; la ruta ademas la protege el backend.
+const enlaceDeAdmins = {
+  href: "/admin/administradores",
+  label: "Administradores",
+  icon: "mdi:account-key-outline",
+};
+
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const visibles = esSuperadmin(user?.role) ? [...links, enlaceDeAdmins] : links;
 
   return (
     <nav className="admin-sidebar flex flex-col gap-5">
@@ -22,7 +33,7 @@ export function AdminSidebar() {
       </div>
 
       <div className="flex flex-row gap-2 overflow-x-auto md:flex-col">
-        {links.map((link) => {
+        {visibles.map((link) => {
           const active = pathname === link.href;
           return (
             <Link

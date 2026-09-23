@@ -1,4 +1,4 @@
-import type { AuthResponse, AuthUser } from "@/lib/types";
+import type { AuthResponse, AuthUser, ResultadoDeLogin } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
 
@@ -25,10 +25,32 @@ export function registerRequest(name: string, email: string, password: string) {
   });
 }
 
+// Devuelve la sesión si es un cliente, o el desafío si es una cuenta del panel.
 export function loginRequest(email: string, password: string) {
-  return authFetch<AuthResponse>("/api/auth/login", {
+  return authFetch<ResultadoDeLogin>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export function verificarCodigoRequest(desafioId: string, codigo: string) {
+  return authFetch<AuthResponse>("/api/auth/codigo", {
+    method: "POST",
+    body: JSON.stringify({ desafioId, codigo }),
+  });
+}
+
+export function olvideRequest(email: string) {
+  return authFetch<{ mensaje: string }>("/api/auth/olvide", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function restablecerRequest(token: string, password: string) {
+  return authFetch<{ mensaje: string }>("/api/auth/restablecer", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
   });
 }
 

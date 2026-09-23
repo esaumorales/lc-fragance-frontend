@@ -1,15 +1,22 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { AuthUser } from "@/lib/types";
-import { loginRequest, logoutRequest, registerRequest } from "@/lib/auth-api";
+import type { AuthUser, DesafioSegundoFactor } from "@/lib/types";
+import {
+  loginRequest,
+  logoutRequest,
+  registerRequest,
+  verificarCodigoRequest,
+} from "@/lib/auth-api";
 import { bindSessionListener, refreshSession, setSessionToken } from "@/lib/session";
 
 type AuthContextValue = {
   user: AuthUser | null;
   accessToken: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  // Devuelve el desafío si la cuenta es del panel, o null si ya quedó dentro.
+  login: (email: string, password: string) => Promise<DesafioSegundoFactor | null>;
+  completarCodigo: (desafioId: string, codigo: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -41,18 +48,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshSession().finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
-    const res = await loginRequest(email, password);
+  function abrirSesion(res: { accessToken: string; user: AuthUser }) {
     setSessionToken(res.accessToken);
     setAccessToken(res.accessToken);
     setUser(res.user);
   }
 
+  async function login(email: string, password: string) {
+    const res = await loginRequest(email, password);
+    if ("requiereCodigo" in res) {
+      return res;
+    }
+    abrirSesion(res);
+    return null;
+  }
+
+  async function completarCodigo(desafioId: string, codigo: string) {
+    abrirSesion(await verificarCodigoRequest(desafioId, codigo));
+  }
+
   async function register(name: string, email: string, password: string) {
-    const res = await registerRequest(name, email, password);
-    setSessionToken(res.accessToken);
-    setAccessToken(res.accessToken);
-    setUser(res.user);
+    abrirSesion(await registerRequest(name, email, password));
   }
 
   async function logout() {
@@ -63,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, accessToken, loading, login, completarCodigo, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
