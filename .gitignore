@@ -6,7 +6,8 @@ out/
 # Entorno: nunca se versiona, hay secretos adentro
 .env
 .env.*
-!.env.example
+# Las plantillas sin secretos si van: .env.example, .env.local.example
+!.env*.example
 
 .vercel/
 coverage/
