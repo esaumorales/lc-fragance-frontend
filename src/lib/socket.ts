@@ -1,6 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
+import { SOCKET_URL } from "@/lib/api-base";
 
 let socket: Socket | null = null;
 

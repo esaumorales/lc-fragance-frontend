@@ -1,6 +1,5 @@
 import { getSessionToken, refreshSession } from "@/lib/session";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
+import { API_BASE } from "@/lib/api-base";
 
 /**
  * Peticion autenticada con renovacion automatica.
@@ -18,7 +17,7 @@ export async function authorizedFetch<T>(
   init?: RequestInit
 ): Promise<T> {
   const send = (bearer: string) =>
-    fetch(`${API_URL}${path}`, {
+    fetch(`${API_BASE}${path}`, {
       ...init,
       credentials: "include",
       headers: {
