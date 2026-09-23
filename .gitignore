@@ -1,0 +1,19 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Entorno: nunca se versiona, hay secretos adentro
+.env
+.env.*
+!.env.example
+
+.vercel/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Salidas de los scripts de Python
+__pycache__/
+*.pyc
