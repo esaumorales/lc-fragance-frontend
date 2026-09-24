@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { subirImagen } from "@/lib/upload-api";
 import { fetchCategories, fetchProducts } from "@/lib/api";
-import { adjustStock, createProduct, deleteProduct } from "@/lib/admin-api";
+import { adjustStock, createProduct, deleteProduct, updateProduct } from "@/lib/admin-api";
 import type { Category, Product } from "@/lib/types";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
@@ -45,6 +45,9 @@ export function ProductAdminView() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Con un id adentro, el formulario edita ese producto en vez de crear uno.
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   function notifySuccess(message: string) {
     setSuccess(message);
@@ -77,29 +80,68 @@ export function ProductAdminView() {
       .map((n) => n.trim())
       .filter(Boolean);
 
+    const datos = {
+      name: form.name,
+      slug: form.slug || slugify(form.name),
+      description: form.description,
+      price: Number(form.price),
+      sku: form.sku,
+      categoryId: form.categoryId,
+      images: form.imageUrl ? [form.imageUrl] : [],
+      attributes: {
+        ...(notas.length > 0 ? { notasOlfativas: notas } : {}),
+        ...(form.marca ? { marca: form.marca } : {}),
+      },
+    };
+
     try {
-      await createProduct(accessToken, {
-        name: form.name,
-        slug: form.slug || slugify(form.name),
-        description: form.description,
-        price: Number(form.price),
-        sku: form.sku,
-        stock: Number(form.stock),
-        categoryId: form.categoryId,
-        images: form.imageUrl ? [form.imageUrl] : [],
-        attributes: {
-          ...(notas.length > 0 ? { notasOlfativas: notas } : {}),
-          ...(form.marca ? { marca: form.marca } : {}),
-        },
-      });
-      setForm({ ...emptyForm, categoryId: form.categoryId });
-      notifySuccess(`"${form.name}" se creó correctamente.`);
+      if (editandoId) {
+        // El stock queda afuera: se ajusta con los botones de la lista y
+        // mandarlo aca pisaria cualquier cambio hecho mientras tanto.
+        await updateProduct(accessToken, editandoId, datos);
+        notifySuccess(`"${form.name}" se actualizó.`);
+        cancelarEdicion();
+      } else {
+        await createProduct(accessToken, { ...datos, stock: Number(form.stock) });
+        setForm({ ...emptyForm, categoryId: form.categoryId });
+        notifySuccess(`"${form.name}" se creó correctamente.`);
+      }
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo crear el producto");
+      const accion = editandoId ? "actualizar" : "crear";
+      setError(err instanceof Error ? err.message : `No se pudo ${accion} el producto`);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function editar(product: Product) {
+    const atributos = product.attributes as { notasOlfativas?: unknown; marca?: unknown };
+    setForm({
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      price: String(product.price),
+      sku: product.sku,
+      stock: String(product.stock),
+      categoryId: product.categoryId,
+      imageUrl: product.images[0] ?? "",
+      notas: Array.isArray(atributos.notasOlfativas) ? atributos.notasOlfativas.join(", ") : "",
+      marca: typeof atributos.marca === "string" ? atributos.marca : "",
+    });
+    setEditandoId(product.id);
+    setError(null);
+    setErrorSubida(null);
+    // El formulario esta arriba de la lista: sin esto, al editar un producto
+    // del final parece que no paso nada.
+    formRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }
+
+  function cancelarEdicion() {
+    setEditandoId(null);
+    setForm({ ...emptyForm, categoryId: categories[0]?.id ?? "" });
+    setError(null);
+    setErrorSubida(null);
   }
 
   async function handleDelete(id: string) {
@@ -129,9 +171,11 @@ export function ProductAdminView() {
     <div className="flex flex-col gap-6">
       <h1 className="font-serif text-2xl tracking-wide text-foreground">Productos</h1>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5 surface p-5">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-5 surface p-5">
         <div>
-          <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-primary">Datos básicos</p>
+          <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-primary">
+            {editandoId ? `Editando "${form.name}"` : "Datos básicos"}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               placeholder="Nombre" aria-label="Nombre"
@@ -170,13 +214,16 @@ export function ProductAdminView() {
               onChange={(e) => setForm({ ...form, price: e.target.value })}
               required
             />
-            <Input
-              type="number"
-              min="0" step="1" placeholder="Stock inicial" aria-label="Stock inicial"
-              value={form.stock}
-              onChange={(e) => setForm({ ...form, stock: e.target.value })}
-              required
-            />
+            {/* Al editar no va: el stock se ajusta con los botones de la lista. */}
+            {editandoId ? null : (
+              <Input
+                type="number"
+                min="0" step="1" placeholder="Stock inicial" aria-label="Stock inicial"
+                value={form.stock}
+                onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                required
+              />
+            )}
             <Input
               placeholder="Descripción" aria-label="Descripción"
               value={form.description}
@@ -238,10 +285,21 @@ export function ProductAdminView() {
           </div>
         </div>
 
-        <Button type="submit" disabled={submitting} className="w-fit gap-2">
-          <Icon icon="mdi:plus" />
-          Crear producto
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" disabled={submitting} className="w-fit gap-2">
+            <Icon icon={editandoId ? "mdi:content-save-outline" : "mdi:plus"} />
+            {editandoId ? "Guardar cambios" : "Crear producto"}
+          </Button>
+          {editandoId ? (
+            <button
+              type="button"
+              onClick={cancelarEdicion}
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Cancelar
+            </button>
+          ) : null}
+        </div>
       </form>
 
       {error ? <p className="text-sm text-red-400" role="alert">{error}</p> : null}
@@ -299,6 +357,14 @@ export function ProductAdminView() {
                   <Icon icon="mdi:plus" className="h-4 w-4" />
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => editar(product)}
+                className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
+                aria-label={`Editar ${product.name}`}
+              >
+                <Icon icon="mdi:pencil-outline" className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => handleDelete(product.id)}
