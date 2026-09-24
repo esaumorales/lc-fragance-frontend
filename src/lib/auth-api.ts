@@ -61,6 +61,25 @@ export function logoutRequest() {
   return authFetch<void>("/api/auth/logout", { method: "POST" });
 }
 
+export function actualizarPerfilRequest(
+  accessToken: string,
+  datos: { name?: string; email?: string; password?: string }
+) {
+  return authFetch<{ user: AuthUser }>("/api/auth/me", {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(datos),
+  });
+}
+
+export function cambiarClaveRequest(accessToken: string, actual: string, nueva: string) {
+  return authFetch<AuthResponse>("/api/auth/password", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ actual, nueva }),
+  });
+}
+
 export function meRequest(accessToken: string) {
   return authFetch<{ user: AuthUser }>("/api/auth/me", {
     headers: { Authorization: `Bearer ${accessToken}` },

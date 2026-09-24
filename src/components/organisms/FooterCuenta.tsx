@@ -33,6 +33,9 @@ export function FooterCuenta() {
   return (
     <>
       <span className="truncate text-sm text-foreground">{user.name}</span>
+      <Link href="/perfil" className={ENLACE}>
+        Mi perfil
+      </Link>
       {puedeEntrarAlPanel(user.role) && (
         <Link href="/admin" className={ENLACE}>
           Panel de administración

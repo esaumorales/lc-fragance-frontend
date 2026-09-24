@@ -83,6 +83,14 @@ function AccountMenu() {
             <p className="truncate text-xs text-muted-foreground">{user.email}</p>
           </div>
           <div className="flex flex-col py-2">
+            <Link
+              href="/perfil"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
+              <Icon icon="mdi:account-cog-outline" className="h-4 w-4" />
+              Mi perfil
+            </Link>
             {puedeEntrarAlPanel(user.role) ? (
               <Link
                 href="/admin"

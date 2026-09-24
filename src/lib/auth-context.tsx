@@ -17,6 +17,10 @@ type AuthContextValue = {
   // Devuelve el desafío si la cuenta es del panel, o null si ya quedó dentro.
   login: (email: string, password: string) => Promise<DesafioSegundoFactor | null>;
   completarCodigo: (desafioId: string, codigo: string) => Promise<void>;
+  // Tras editar el perfil hay que reflejar los datos nuevos en toda la app.
+  actualizarUsuario: (usuario: AuthUser) => void;
+  // Cambiar la contraseña invalida la sesión vieja y devuelve una nueva.
+  reemplazarSesion: (res: { accessToken: string; user: AuthUser }) => void;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -63,6 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
+  function actualizarUsuario(usuario: AuthUser) {
+    setUser(usuario);
+  }
+
   async function completarCodigo(desafioId: string, codigo: string) {
     abrirSesion(await verificarCodigoRequest(desafioId, codigo));
   }
@@ -79,7 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, loading, login, completarCodigo, register, logout }}>
+    <AuthContext.Provider value={{
+        user,
+        accessToken,
+        loading,
+        login,
+        completarCodigo,
+        actualizarUsuario,
+        reemplazarSesion: abrirSesion,
+        register,
+        logout,
+      }}>
       {children}
     </AuthContext.Provider>
   );
