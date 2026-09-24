@@ -132,3 +132,63 @@ describe("ProductAdminView: edición", () => {
     expect(crear.mock.calls[0]![1]).toHaveProperty("stock");
   });
 });
+
+describe("ProductAdminView: interacción", () => {
+  it("muestra la vista previa de la imagen cargada", async () => {
+    await abrirEdicion();
+    expect(screen.getByAltText("Vista previa de la imagen")).toBeInTheDocument();
+  });
+
+  it("quitar imagen limpia el campo y la vista previa", async () => {
+    const user = await abrirEdicion();
+    await user.click(screen.getByRole("button", { name: "Quitar imagen" }));
+
+    expect(screen.getByLabelText("URL de la imagen")).toHaveValue("");
+    expect(screen.queryByAltText("Vista previa de la imagen")).toBeNull();
+  });
+
+  it("filtra la lista por nombre y avisa si no hay coincidencias", async () => {
+    const user = userEvent.setup();
+    render(<ProductAdminView />);
+    const buscador = await screen.findByLabelText("Buscar por nombre o SKU");
+
+    await user.type(buscador, "oud");
+    expect(screen.getByLabelText("Editar Oud Real")).toBeInTheDocument();
+
+    await user.clear(buscador);
+    await user.type(buscador, "zapatillas");
+    expect(screen.queryByLabelText("Editar Oud Real")).toBeNull();
+    expect(screen.getByText(/Ningún producto coincide/)).toBeInTheDocument();
+  });
+
+  it("también filtra por SKU", async () => {
+    const user = userEvent.setup();
+    render(<ProductAdminView />);
+    await user.type(await screen.findByLabelText("Buscar por nombre o SKU"), "OUD-01");
+    expect(screen.getByLabelText("Editar Oud Real")).toBeInTheDocument();
+  });
+
+  // Borrar sin preguntar, o preguntando con un cuadro del navegador, es peor:
+  // la confirmación vive en la misma fila.
+  it("eliminar pide confirmación antes de borrar", async () => {
+    const user = userEvent.setup();
+    render(<ProductAdminView />);
+    await user.click(await screen.findByLabelText("Eliminar Oud Real"));
+
+    expect(borrar).not.toHaveBeenCalled();
+    expect(screen.getByText("¿Eliminar?")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Sí" }));
+    await waitFor(() => expect(borrar).toHaveBeenCalledWith("un-token", "prod-1"));
+  });
+
+  it("decir que no cancela el borrado", async () => {
+    const user = userEvent.setup();
+    render(<ProductAdminView />);
+    await user.click(await screen.findByLabelText("Eliminar Oud Real"));
+    await user.click(screen.getByRole("button", { name: "No" }));
+
+    expect(borrar).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Eliminar Oud Real")).toBeInTheDocument();
+  });
+});

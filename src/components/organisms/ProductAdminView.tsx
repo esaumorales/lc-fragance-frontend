@@ -10,6 +10,7 @@ import type { Category, Product } from "@/lib/types";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
+import { cn } from "@/lib/cn";
 import { BottleIcon } from "@/components/atoms/BottleIcon";
 
 function slugify(value: string) {
@@ -48,6 +49,24 @@ export function ProductAdminView() {
   // Con un id adentro, el formulario edita ese producto en vez de crear uno.
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [arrastrando, setArrastrando] = useState(false);
+  // Borrar pide confirmacion en la misma fila, sin cuadro del navegador.
+  const [confirmandoBorrado, setConfirmandoBorrado] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
+
+  async function subirArchivo(archivo: File | undefined | null) {
+    if (!archivo || !accessToken) return;
+    setSubiendo(true);
+    setErrorSubida(null);
+    try {
+      const url = await subirImagen(accessToken, archivo);
+      setForm((actual) => ({ ...actual, imageUrl: url }));
+    } catch (error) {
+      setErrorSubida(error instanceof Error ? error.message : "No se pudo subir");
+    } finally {
+      setSubiendo(false);
+    }
+  }
 
   function notifySuccess(message: string) {
     setSuccess(message);
@@ -144,11 +163,23 @@ export function ProductAdminView() {
     setErrorSubida(null);
   }
 
+  // Con el catalogo crecido, encontrar un producto para editarlo a ojo es
+  // imposible; filtra por nombre y por SKU.
+  const termino = busqueda.trim().toLowerCase();
+  const visibles = termino
+    ? products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(termino) || p.sku.toLowerCase().includes(termino)
+      )
+    : products;
+
   async function handleDelete(id: string) {
     if (!accessToken) return;
     setError(null);
     try {
       await deleteProduct(accessToken, id);
+      setConfirmandoBorrado(null);
+      if (editandoId === id) cancelarEdicion();
       notifySuccess("Producto eliminado.");
       loadData();
     } catch (err) {
@@ -239,38 +270,78 @@ export function ProductAdminView() {
             Imagen y atributos (opcional)
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-2 sm:col-span-2">
-              <Input
-                placeholder="URL de la imagen" aria-label="URL de la imagen"
-                value={form.imageUrl}
-                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              />
-              {/* Se puede pegar la URL o subir el archivo; la subida rellena el campo. */}
-              <label className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  disabled={subiendo || !accessToken}
-                  className="max-w-full text-[11px] file:mr-3 file:border file:border-hairline file:bg-transparent file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-[0.18em] file:text-foreground"
-                  onChange={async (e) => {
-                    const archivo = e.target.files?.[0];
-                    if (!archivo || !accessToken) return;
-                    setSubiendo(true);
-                    setErrorSubida(null);
-                    try {
-                      const url = await subirImagen(accessToken, archivo);
-                      setForm((actual) => ({ ...actual, imageUrl: url }));
-                    } catch (error) {
-                      setErrorSubida(error instanceof Error ? error.message : "No se pudo subir");
-                    } finally {
-                      setSubiendo(false);
-                      e.target.value = "";
-                    }
-                  }}
+            <div className="flex flex-wrap items-start gap-4 sm:col-span-2">
+              {/* Se ve al instante lo que se va a guardar, y acepta arrastrar. */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setArrastrando(true);
+                }}
+                onDragLeave={() => setArrastrando(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setArrastrando(false);
+                  subirArchivo(e.dataTransfer.files?.[0]);
+                }}
+                onPaste={(e) => subirArchivo(e.clipboardData.files?.[0])}
+                className={cn(
+                  "relative grid h-28 w-28 shrink-0 place-items-center overflow-hidden border border-dashed transition-colors",
+                  arrastrando ? "border-primary bg-primary/10" : "border-border"
+                )}
+              >
+                {form.imageUrl.startsWith("http") ? (
+                  <Image
+                    src={form.imageUrl}
+                    alt="Vista previa de la imagen"
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <Icon icon="mdi:image-plus-outline" className="h-7 w-7 text-muted-foreground/60" />
+                )}
+                {subiendo ? (
+                  <div className="absolute inset-0 grid place-items-center bg-background/70">
+                    <Icon icon="mdi:loading" className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Input
+                  placeholder="URL de la imagen" aria-label="URL de la imagen"
+                  value={form.imageUrl}
+                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
                 />
-                {subiendo ? "Subiendo…" : "o subí el archivo"}
-              </label>
-              {errorSubida ? <p className="text-[11px] text-red-400">{errorSubida}</p> : null}
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      disabled={subiendo || !accessToken}
+                      className="max-w-full text-[11px] file:mr-3 file:border file:border-hairline file:bg-transparent file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-[0.18em] file:text-foreground"
+                      onChange={async (e) => {
+                        await subirArchivo(e.target.files?.[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                    {subiendo ? "Subiendo…" : "o elegí el archivo"}
+                  </label>
+                  {form.imageUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, imageUrl: "" })}
+                      className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-red-400"
+                    >
+                      Quitar imagen
+                    </button>
+                  ) : null}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  También podés arrastrar una imagen sobre el recuadro o pegarla con Ctrl+V.
+                </p>
+                {errorSubida ? <p className="text-[11px] text-red-400">{errorSubida}</p> : null}
+              </div>
             </div>
             <Input
               placeholder="Notas olfativas (separadas por coma)" aria-label="Notas olfativas (separadas por coma)"
@@ -317,10 +388,21 @@ export function ProductAdminView() {
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {products.map((product) => (
+          {products.length > 0 ? (
+            <Input
+              placeholder="Buscar por nombre o SKU" aria-label="Buscar por nombre o SKU"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="mb-1 w-full sm:max-w-xs"
+            />
+          ) : null}
+          {visibles.map((product) => (
             <div
               key={product.id}
-              className="flex flex-wrap items-center justify-between gap-4 surface px-4 py-3"
+              className={cn(
+                "flex flex-wrap items-center justify-between gap-4 surface px-4 py-3 transition-colors",
+                editandoId === product.id ? "border border-primary bg-primary/5" : null
+              )}
             >
               <div className="flex min-w-0 items-center gap-3">
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden bg-muted">
@@ -365,19 +447,44 @@ export function ProductAdminView() {
               >
                 <Icon icon="mdi:pencil-outline" className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(product.id)}
-                className="shrink-0 text-muted-foreground transition-colors hover:text-red-400"
-                aria-label={`Eliminar ${product.name}`}
-              >
-                <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
-              </button>
+              {confirmandoBorrado === product.id ? (
+                <span className="flex shrink-0 items-center gap-3 text-xs">
+                  <span className="text-muted-foreground">¿Eliminar?</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(product.id)}
+                    className="uppercase tracking-[0.1em] text-red-400"
+                  >
+                    Sí
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmandoBorrado(null)}
+                    className="uppercase tracking-[0.1em] text-muted-foreground"
+                  >
+                    No
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoBorrado(product.id)}
+                  className="shrink-0 text-muted-foreground transition-colors hover:text-red-400"
+                  aria-label={`Eliminar ${product.name}`}
+                >
+                  <Icon icon="mdi:trash-can-outline" className="h-4 w-4" />
+                </button>
+              )}
             </div>
           ))}
           {products.length === 0 ? (
             <p className="surface px-4 py-3 text-sm text-muted-foreground">
               No hay productos todavía.
+            </p>
+          ) : null}
+          {products.length > 0 && visibles.length === 0 ? (
+            <p className="surface px-4 py-3 text-sm text-muted-foreground">
+              Ningún producto coincide con “{busqueda}”.
             </p>
           ) : null}
         </div>
