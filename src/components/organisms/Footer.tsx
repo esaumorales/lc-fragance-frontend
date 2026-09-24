@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/atoms/Logo";
 import { Icon } from "@/components/atoms/Icon";
+import { FooterCuenta } from "@/components/organisms/FooterCuenta";
 
 export function Footer() {
   return (
@@ -29,12 +30,7 @@ export function Footer() {
 
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-[0.2em] text-primary">Cuenta</p>
-          <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
-            Iniciar sesión
-          </Link>
-          <Link href="/registro" className="text-sm text-muted-foreground hover:text-foreground">
-            Crear cuenta
-          </Link>
+          <FooterCuenta />
         </div>
 
         <div className="flex flex-col gap-3">
