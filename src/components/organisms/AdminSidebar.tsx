@@ -24,7 +24,9 @@ export function AdminSidebar() {
         <span className="font-serif text-sm uppercase tracking-[0.2em]">Admin</span>
       </div>
 
-      <div className="flex flex-row gap-2 overflow-x-auto md:flex-col">
+      {/* En celular se acomodan en varias filas: con scroll horizontal los
+          ultimos quedan fuera de vista y no hay nada que lo sugiera. */}
+      <div className="flex flex-row flex-wrap gap-2 md:flex-col md:flex-nowrap">
         {links.map((link) => {
           const active = pathname === link.href;
           return (

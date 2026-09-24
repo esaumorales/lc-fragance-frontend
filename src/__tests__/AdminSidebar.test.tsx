@@ -37,3 +37,15 @@ describe("AdminSidebar", () => {
     expect(screen.getByRole("link", { name: /Pedidos/ })).toHaveAttribute("data-active", "false");
   });
 });
+
+describe("AdminSidebar en pantallas chicas", () => {
+  // Con scroll horizontal los ultimos enlaces quedaban fuera de vista y no
+  // habia nada que lo sugiriera: por eso "Usuarios" no se encontraba.
+  it("los enlaces se acomodan en varias filas, no en un carrusel", () => {
+    const { container } = render(<AdminSidebar />);
+    const contenedor = container.querySelector("nav > div:last-child");
+
+    expect(contenedor?.className).toContain("flex-wrap");
+    expect(contenedor?.className).not.toContain("overflow-x-auto");
+  });
+});

@@ -110,10 +110,11 @@ export function CartView() {
       <div className="flex flex-col gap-4 surface p-6">
         <p className="flex items-center gap-2 text-foreground">
           <Icon icon="mdi:check-circle" className="text-primary" />
-          Pedido #{result.order.id.slice(0, 8)} confirmado — total {precio(result.order.total)}
+          Pedido #{result.order.id.slice(0, 8)} registrado — total {precio(result.order.total)}
         </p>
         <p className="text-sm text-muted-foreground">
-          Para finalizar, pagá por Yape a nombre de{" "}
+          Queda pendiente hasta que confirmemos el pago; recién ahí se aparta tu stock. Para
+          finalizar, pagá por Yape a nombre de{" "}
           <span className="text-foreground">{result.yape.name}</span> al número{" "}
           <span className="text-foreground">{result.yape.phone}</span> y enviá el comprobante.
         </p>
