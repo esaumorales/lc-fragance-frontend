@@ -1,72 +1,32 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { subirImagen } from "@/lib/upload-api";
 import { fetchCategories, fetchProducts } from "@/lib/api";
-import { adjustStock, createProduct, deleteProduct, updateProduct } from "@/lib/admin-api";
+import { adjustStock, deleteProduct } from "@/lib/admin-api";
+import { cn } from "@/lib/cn";
 import type { Category, Product } from "@/lib/types";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
-import { cn } from "@/lib/cn";
 import { BottleIcon } from "@/components/atoms/BottleIcon";
+import { ProductFormDialog } from "@/components/organisms/ProductFormDialog";
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-const emptyForm = {
-  name: "",
-  slug: "",
-  description: "",
-  price: "",
-  sku: "",
-  stock: "0",
-  categoryId: "",
-  imageUrl: "",
-  notas: "",
-  marca: "",
-};
+// Qué está abierto: nada, el alta, o la edición de un producto.
+type Formulario = { modo: "cerrado" } | { modo: "alta" } | { modo: "edicion"; producto: Product };
 
 export function ProductAdminView() {
   const { accessToken } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
-  const [subiendo, setSubiendo] = useState(false);
-  const [errorSubida, setErrorSubida] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState(emptyForm);
+  const [formulario, setFormulario] = useState<Formulario>({ modo: "cerrado" });
+  const [busqueda, setBusqueda] = useState("");
+  // Borrar pregunta en la misma fila, sin cuadro del navegador.
+  const [confirmandoBorrado, setConfirmandoBorrado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  // Con un id adentro, el formulario edita ese producto en vez de crear uno.
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [arrastrando, setArrastrando] = useState(false);
-  // Borrar pide confirmacion en la misma fila, sin cuadro del navegador.
-  const [confirmandoBorrado, setConfirmandoBorrado] = useState<string | null>(null);
-  const [busqueda, setBusqueda] = useState("");
-
-  async function subirArchivo(archivo: File | undefined | null) {
-    if (!archivo || !accessToken) return;
-    setSubiendo(true);
-    setErrorSubida(null);
-    try {
-      const url = await subirImagen(accessToken, archivo);
-      setForm((actual) => ({ ...actual, imageUrl: url }));
-    } catch (error) {
-      setErrorSubida(error instanceof Error ? error.message : "No se pudo subir");
-    } finally {
-      setSubiendo(false);
-    }
-  }
 
   function notifySuccess(message: string) {
     setSuccess(message);
@@ -78,7 +38,6 @@ export function ProductAdminView() {
       .then(([page, cats]) => {
         setProducts(page.items);
         setCategories(cats);
-        setForm((f) => ({ ...f, categoryId: f.categoryId || cats[0]?.id || "" }));
       })
       .catch(() => setError("No se pudieron cargar los productos"))
       .finally(() => setLoading(false));
@@ -88,88 +47,11 @@ export function ProductAdminView() {
     loadData();
   }, []);
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (!accessToken) return;
-    setSubmitting(true);
-    setError(null);
-
-    const notas = form.notas
-      .split(",")
-      .map((n) => n.trim())
-      .filter(Boolean);
-
-    const datos = {
-      name: form.name,
-      slug: form.slug || slugify(form.name),
-      description: form.description,
-      price: Number(form.price),
-      sku: form.sku,
-      categoryId: form.categoryId,
-      images: form.imageUrl ? [form.imageUrl] : [],
-      attributes: {
-        ...(notas.length > 0 ? { notasOlfativas: notas } : {}),
-        ...(form.marca ? { marca: form.marca } : {}),
-      },
-    };
-
-    try {
-      if (editandoId) {
-        // El stock queda afuera: se ajusta con los botones de la lista y
-        // mandarlo aca pisaria cualquier cambio hecho mientras tanto.
-        await updateProduct(accessToken, editandoId, datos);
-        notifySuccess(`"${form.name}" se actualizó.`);
-        cancelarEdicion();
-      } else {
-        await createProduct(accessToken, { ...datos, stock: Number(form.stock) });
-        setForm({ ...emptyForm, categoryId: form.categoryId });
-        notifySuccess(`"${form.name}" se creó correctamente.`);
-      }
-      loadData();
-    } catch (err) {
-      const accion = editandoId ? "actualizar" : "crear";
-      setError(err instanceof Error ? err.message : `No se pudo ${accion} el producto`);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function editar(product: Product) {
-    const atributos = product.attributes as { notasOlfativas?: unknown; marca?: unknown };
-    setForm({
-      name: product.name,
-      slug: product.slug,
-      description: product.description,
-      price: String(product.price),
-      sku: product.sku,
-      stock: String(product.stock),
-      categoryId: product.categoryId,
-      imageUrl: product.images[0] ?? "",
-      notas: Array.isArray(atributos.notasOlfativas) ? atributos.notasOlfativas.join(", ") : "",
-      marca: typeof atributos.marca === "string" ? atributos.marca : "",
-    });
-    setEditandoId(product.id);
-    setError(null);
-    setErrorSubida(null);
-    // El formulario esta arriba de la lista: sin esto, al editar un producto
-    // del final parece que no paso nada.
-    formRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-  }
-
-  function cancelarEdicion() {
-    setEditandoId(null);
-    setForm({ ...emptyForm, categoryId: categories[0]?.id ?? "" });
-    setError(null);
-    setErrorSubida(null);
-  }
-
-  // Con el catalogo crecido, encontrar un producto para editarlo a ojo es
-  // imposible; filtra por nombre y por SKU.
+  // Con el catálogo crecido, encontrar un producto a ojo es imposible.
   const termino = busqueda.trim().toLowerCase();
   const visibles = termino
     ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(termino) || p.sku.toLowerCase().includes(termino)
+        (p) => p.name.toLowerCase().includes(termino) || p.sku.toLowerCase().includes(termino)
       )
     : products;
 
@@ -179,7 +61,6 @@ export function ProductAdminView() {
     try {
       await deleteProduct(accessToken, id);
       setConfirmandoBorrado(null);
-      if (editandoId === id) cancelarEdicion();
       notifySuccess("Producto eliminado.");
       loadData();
     } catch (err) {
@@ -200,178 +81,27 @@ export function ProductAdminView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-serif text-2xl tracking-wide text-foreground">Productos</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-serif text-2xl tracking-wide text-foreground">Productos</h1>
+        <Button
+          type="button"
+          onClick={() => setFormulario({ modo: "alta" })}
+          disabled={categories.length === 0}
+          className="gap-2"
+        >
+          <Icon icon="mdi:plus" />
+          Nuevo producto
+        </Button>
+      </div>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-5 surface p-5">
-        <div>
-          <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-primary">
-            {editandoId ? `Editando "${form.name}"` : "Datos básicos"}
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              placeholder="Nombre" aria-label="Nombre"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Slug (opcional)" aria-label="Slug (opcional)"
-              value={form.slug}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            />
-            <Input
-              placeholder="SKU" aria-label="SKU"
-              value={form.sku}
-              onChange={(e) => setForm({ ...form, sku: e.target.value })}
-              required
-            />
-            <select aria-label="Categoría"
-              value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-              className="border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-              required
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <Input
-              type="number"
-              step="0.01" min="0.01"
-              placeholder="Precio" aria-label="Precio"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              required
-            />
-            {/* Al editar no va: el stock se ajusta con los botones de la lista. */}
-            {editandoId ? null : (
-              <Input
-                type="number"
-                min="0" step="1" placeholder="Stock inicial" aria-label="Stock inicial"
-                value={form.stock}
-                onChange={(e) => setForm({ ...form, stock: e.target.value })}
-                required
-              />
-            )}
-            <Input
-              placeholder="Descripción" aria-label="Descripción"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="sm:col-span-2"
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-primary">
-            Imagen y atributos (opcional)
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-wrap items-start gap-4 sm:col-span-2">
-              {/* Se ve al instante lo que se va a guardar, y acepta arrastrar. */}
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setArrastrando(true);
-                }}
-                onDragLeave={() => setArrastrando(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setArrastrando(false);
-                  subirArchivo(e.dataTransfer.files?.[0]);
-                }}
-                onPaste={(e) => subirArchivo(e.clipboardData.files?.[0])}
-                className={cn(
-                  "relative grid h-28 w-28 shrink-0 place-items-center overflow-hidden border border-dashed transition-colors",
-                  arrastrando ? "border-primary bg-primary/10" : "border-border"
-                )}
-              >
-                {form.imageUrl.startsWith("http") ? (
-                  <Image
-                    src={form.imageUrl}
-                    alt="Vista previa de la imagen"
-                    fill
-                    sizes="112px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <Icon icon="mdi:image-plus-outline" className="h-7 w-7 text-muted-foreground/60" />
-                )}
-                {subiendo ? (
-                  <div className="absolute inset-0 grid place-items-center bg-background/70">
-                    <Icon icon="mdi:loading" className="h-5 w-5 animate-spin text-primary" />
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <Input
-                  placeholder="URL de la imagen" aria-label="URL de la imagen"
-                  value={form.imageUrl}
-                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                />
-                <div className="flex flex-wrap items-center gap-4">
-                  <label className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/avif"
-                      disabled={subiendo || !accessToken}
-                      className="max-w-full text-[11px] file:mr-3 file:border file:border-hairline file:bg-transparent file:px-3 file:py-1.5 file:text-[10px] file:uppercase file:tracking-[0.18em] file:text-foreground"
-                      onChange={async (e) => {
-                        await subirArchivo(e.target.files?.[0]);
-                        e.target.value = "";
-                      }}
-                    />
-                    {subiendo ? "Subiendo…" : "o elegí el archivo"}
-                  </label>
-                  {form.imageUrl ? (
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, imageUrl: "" })}
-                      className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-red-400"
-                    >
-                      Quitar imagen
-                    </button>
-                  ) : null}
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  También podés arrastrar una imagen sobre el recuadro o pegarla con Ctrl+V.
-                </p>
-                {errorSubida ? <p className="text-[11px] text-red-400">{errorSubida}</p> : null}
-              </div>
-            </div>
-            <Input
-              placeholder="Notas olfativas (separadas por coma)" aria-label="Notas olfativas (separadas por coma)"
-              value={form.notas}
-              onChange={(e) => setForm({ ...form, notas: e.target.value })}
-            />
-            <Input
-              placeholder="Marca" aria-label="Marca"
-              value={form.marca}
-              onChange={(e) => setForm({ ...form, marca: e.target.value })}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={submitting} className="w-fit gap-2">
-            <Icon icon={editandoId ? "mdi:content-save-outline" : "mdi:plus"} />
-            {editandoId ? "Guardar cambios" : "Crear producto"}
-          </Button>
-          {editandoId ? (
-            <button
-              type="button"
-              onClick={cancelarEdicion}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Cancelar
-            </button>
-          ) : null}
-        </div>
-      </form>
+      {products.length > 0 ? (
+        <Input
+          placeholder="Buscar por nombre o SKU" aria-label="Buscar por nombre o SKU"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full sm:max-w-xs"
+        />
+      ) : null}
 
       {error ? <p className="text-sm text-red-400" role="alert">{error}</p> : null}
       {success ? (
@@ -388,23 +118,18 @@ export function ProductAdminView() {
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {products.length > 0 ? (
-            <Input
-              placeholder="Buscar por nombre o SKU" aria-label="Buscar por nombre o SKU"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="mb-1 w-full sm:max-w-xs"
-            />
-          ) : null}
           {visibles.map((product) => (
             <div
               key={product.id}
-              className={cn(
-                "flex flex-wrap items-center justify-between gap-4 surface px-4 py-3 transition-colors",
-                editandoId === product.id ? "border border-primary bg-primary/5" : null
-              )}
+              className="flex flex-wrap items-center justify-between gap-4 surface px-4 py-3"
             >
-              <div className="flex min-w-0 items-center gap-3">
+              {/* La fila entera abre la edición: no hay que buscar un botón. */}
+              <button
+                type="button"
+                onClick={() => setFormulario({ modo: "edicion", producto: product })}
+                aria-label={`Editar ${product.name}`}
+                className="group flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden bg-muted">
                   {product.images[0] ? (
                     <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
@@ -413,13 +138,16 @@ export function ProductAdminView() {
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm text-foreground">{product.name}</p>
+                  <p className="truncate text-sm text-foreground transition-colors group-hover:text-primary">
+                    {product.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {product.sku} · ${product.price} ·{" "}
                     {categories.find((c) => c.id === product.categoryId)?.name ?? "Sin categoría"}
                   </p>
                 </div>
-              </div>
+              </button>
+
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
@@ -429,7 +157,14 @@ export function ProductAdminView() {
                 >
                   <Icon icon="mdi:minus" className="h-4 w-4" />
                 </button>
-                <span className="w-8 text-center text-sm text-foreground">{product.stock}</span>
+                <span
+                  className={cn(
+                    "w-8 text-center text-sm",
+                    product.stock <= 5 ? "text-primary" : "text-foreground"
+                  )}
+                >
+                  {product.stock}
+                </span>
                 <button
                   type="button"
                   onClick={() => handleStockChange(product.id, 1)}
@@ -439,14 +174,7 @@ export function ProductAdminView() {
                   <Icon icon="mdi:plus" className="h-4 w-4" />
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => editar(product)}
-                className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
-                aria-label={`Editar ${product.name}`}
-              >
-                <Icon icon="mdi:pencil-outline" className="h-4 w-4" />
-              </button>
+
               {confirmandoBorrado === product.id ? (
                 <span className="flex shrink-0 items-center gap-3 text-xs">
                   <span className="text-muted-foreground">¿Eliminar?</span>
@@ -477,6 +205,7 @@ export function ProductAdminView() {
               )}
             </div>
           ))}
+
           {products.length === 0 ? (
             <p className="surface px-4 py-3 text-sm text-muted-foreground">
               No hay productos todavía.
@@ -489,7 +218,20 @@ export function ProductAdminView() {
           ) : null}
         </div>
       )}
+
+      {formulario.modo !== "cerrado" ? (
+        <ProductFormDialog
+          // La clave reinicia el formulario al pasar de un producto a otro.
+          key={formulario.modo === "edicion" ? formulario.producto.id : "alta"}
+          producto={formulario.modo === "edicion" ? formulario.producto : null}
+          categories={categories}
+          onCerrar={() => setFormulario({ modo: "cerrado" })}
+          onGuardado={(mensaje) => {
+            notifySuccess(mensaje);
+            loadData();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
-

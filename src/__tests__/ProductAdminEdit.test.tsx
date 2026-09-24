@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeAll, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProductAdminView } from "@/components/organisms/ProductAdminView";
@@ -29,9 +29,19 @@ vi.mock("@/lib/admin-api", () => ({
   adjustStock: ajustar,
 }));
 
+// jsdom no implementa el comportamiento del <dialog>.
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+  };
+});
+
 const categoria: Category = { id: "cat-1", name: "Perfumes", slug: "perfumes", parentId: null };
 
-const producto: Product = {
+const producto = {
   id: "prod-1",
   name: "Oud Real",
   slug: "oud-real",
@@ -59,19 +69,20 @@ async function abrirEdicion() {
   return user;
 }
 
-describe("ProductAdminView: edición", () => {
-  it("carga los datos del producto en el formulario", async () => {
+describe("ProductAdminView: edición en una ventana", () => {
+  it("la fila entera abre la ventana con los datos cargados", async () => {
     await abrirEdicion();
 
+    expect(screen.getByRole("heading", { name: "Oud Real" })).toBeInTheDocument();
     expect(screen.getByLabelText("Nombre")).toHaveValue("Oud Real");
     expect(screen.getByLabelText("SKU")).toHaveValue("OUD-01");
     expect(screen.getByLabelText("Precio")).toHaveValue(250);
-    expect(screen.getByLabelText("URL de la imagen")).toHaveValue("https://cdn.example.com/oud.jpg");
     expect(screen.getByLabelText("Marca")).toHaveValue("LC");
     expect(screen.getByLabelText("Notas olfativas (separadas por coma)")).toHaveValue("oud, ámbar");
+    expect(screen.getByAltText("Vista previa de la imagen")).toBeInTheDocument();
   });
 
-  it("guarda el nombre y la imagen nuevos con PATCH, no crea otro producto", async () => {
+  it("guarda el nombre y la imagen nuevos con PATCH, sin crear otro producto", async () => {
     const user = await abrirEdicion();
 
     const nombre = screen.getByLabelText("Nombre");
@@ -93,12 +104,10 @@ describe("ProductAdminView: edición", () => {
     expect(crear).not.toHaveBeenCalled();
   });
 
-  // El stock se maneja con los botones de la lista; mandarlo al editar
-  // pisaria cualquier ajuste hecho mientras el formulario estaba abierto.
-  it("no manda el stock al editar", async () => {
+  // El stock se ajusta desde la lista; mandarlo al editar pisaría cualquier
+  // cambio hecho mientras la ventana estaba abierta.
+  it("al editar no pide stock ni lo manda", async () => {
     const user = await abrirEdicion();
-
-    // Mientras se edita, el campo no esta: el stock vive en la lista.
     expect(screen.queryByLabelText("Stock inicial")).toBeNull();
 
     await user.click(screen.getByRole("button", { name: /Guardar cambios/ }));
@@ -107,19 +116,34 @@ describe("ProductAdminView: edición", () => {
     expect(actualizar.mock.calls[0]![2]).not.toHaveProperty("stock");
   });
 
-  it("cancelar deja el formulario limpio y vuelve a modo alta", async () => {
+  it("quitar deja el producto sin imagen", async () => {
+    const user = await abrirEdicion();
+    await user.click(screen.getByRole("button", { name: "Quitar" }));
+
+    expect(screen.queryByAltText("Vista previa de la imagen")).toBeNull();
+    expect(screen.getByLabelText("URL de la imagen")).toHaveValue("");
+
+    await user.click(screen.getByRole("button", { name: /Guardar cambios/ }));
+    await waitFor(() => expect(actualizar.mock.calls[0]![2].images).toEqual([]));
+  });
+
+  it("cancelar cierra la ventana sin guardar", async () => {
     const user = await abrirEdicion();
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
-    expect(screen.getByLabelText("Nombre")).toHaveValue("");
-    expect(screen.getByRole("button", { name: /Crear producto/ })).toBeInTheDocument();
-    expect(screen.getByLabelText("Stock inicial")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Nombre")).toBeNull();
+    expect(actualizar).not.toHaveBeenCalled();
   });
+});
 
-  it("sin editar nada, el formulario crea", async () => {
+describe("ProductAdminView: alta", () => {
+  it("el botón de nuevo abre la ventana vacía y crea con stock", async () => {
     const user = userEvent.setup();
     render(<ProductAdminView />);
-    await screen.findByLabelText("Editar Oud Real");
+    await user.click(await screen.findByRole("button", { name: /Nuevo producto/ }));
+
+    expect(screen.getByLabelText("Nombre")).toHaveValue("");
+    expect(screen.getByLabelText("Stock inicial")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Nombre"), "Nuevo");
     await user.type(screen.getByLabelText("SKU"), "NEW-01");
@@ -133,21 +157,8 @@ describe("ProductAdminView: edición", () => {
   });
 });
 
-describe("ProductAdminView: interacción", () => {
-  it("muestra la vista previa de la imagen cargada", async () => {
-    await abrirEdicion();
-    expect(screen.getByAltText("Vista previa de la imagen")).toBeInTheDocument();
-  });
-
-  it("quitar imagen limpia el campo y la vista previa", async () => {
-    const user = await abrirEdicion();
-    await user.click(screen.getByRole("button", { name: "Quitar imagen" }));
-
-    expect(screen.getByLabelText("URL de la imagen")).toHaveValue("");
-    expect(screen.queryByAltText("Vista previa de la imagen")).toBeNull();
-  });
-
-  it("filtra la lista por nombre y avisa si no hay coincidencias", async () => {
+describe("ProductAdminView: lista", () => {
+  it("filtra por nombre y avisa si no hay coincidencias", async () => {
     const user = userEvent.setup();
     render(<ProductAdminView />);
     const buscador = await screen.findByLabelText("Buscar por nombre o SKU");
@@ -168,9 +179,7 @@ describe("ProductAdminView: interacción", () => {
     expect(screen.getByLabelText("Editar Oud Real")).toBeInTheDocument();
   });
 
-  // Borrar sin preguntar, o preguntando con un cuadro del navegador, es peor:
-  // la confirmación vive en la misma fila.
-  it("eliminar pide confirmación antes de borrar", async () => {
+  it("eliminar pide confirmación en la misma fila", async () => {
     const user = userEvent.setup();
     render(<ProductAdminView />);
     await user.click(await screen.findByLabelText("Eliminar Oud Real"));

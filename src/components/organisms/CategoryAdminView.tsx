@@ -5,18 +5,10 @@ import { useAuth } from "@/lib/auth-context";
 import { fetchCategories } from "@/lib/api";
 import { createCategory, deleteCategory } from "@/lib/admin-api";
 import type { Category } from "@/lib/types";
+import { slugify } from "@/lib/slug";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 export function CategoryAdminView() {
   const { accessToken } = useAuth();
