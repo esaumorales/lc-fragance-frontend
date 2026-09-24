@@ -76,3 +76,14 @@ export type CheckoutResult = {
   whatsappUrl: string | null;
   yape: { phone: string; name: string };
 };
+
+export type Direccion = {
+  recipient: string | null;
+  phone: string | null;
+  street: string;
+  reference: string | null;
+  district: string;
+  city: string;
+  region: string | null;
+  postalCode: string | null;
+};

@@ -6,16 +6,26 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { actualizarPerfilRequest, cambiarClaveRequest } from "@/lib/auth-api";
 import { puedeEntrarAlPanel } from "@/lib/roles";
+import { cn } from "@/lib/cn";
 import type { AuthUser } from "@/lib/types";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
+import { DireccionForm } from "@/components/organisms/DireccionForm";
 
 const ROLES: Record<string, string> = {
   CUSTOMER: "Cliente",
   ADMIN: "Administrador",
   SUPERADMIN: "Superadministrador",
 };
+
+const SECCIONES = [
+  { id: "datos", label: "Datos", icon: "mdi:account-outline" },
+  { id: "seguridad", label: "Seguridad", icon: "mdi:lock-outline" },
+  { id: "direccion", label: "Dirección", icon: "mdi:map-marker-outline" },
+] as const;
+
+type Seccion = (typeof SECCIONES)[number]["id"];
 
 export function PerfilView() {
   const { user, loading } = useAuth();
@@ -40,73 +50,11 @@ export function PerfilView() {
 }
 
 function Perfil({ user }: { user: AuthUser }) {
-  const { accessToken, actualizarUsuario, reemplazarSesion } = useAuth();
-
-  // Se monta con el usuario ya cargado, asi que alcanza el valor inicial: no
-  // hace falta un efecto que rellene los campos despues.
-  const [name, setName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
-  const [claveDeConfirmacion, setClaveDeConfirmacion] = useState("");
-  const [guardando, setGuardando] = useState(false);
-  const [errorDatos, setErrorDatos] = useState<string | null>(null);
-  const [avisoDatos, setAvisoDatos] = useState<string | null>(null);
-
-  const [actual, setActual] = useState("");
-  const [nueva, setNueva] = useState("");
-  const [repetida, setRepetida] = useState("");
-  const [cambiando, setCambiando] = useState(false);
-  const [errorClave, setErrorClave] = useState<string | null>(null);
-  const [avisoClave, setAvisoClave] = useState<string | null>(null);
-
-  const cambiaElCorreo = email.trim().toLowerCase() !== user.email.toLowerCase();
-
-  async function guardarDatos(evento: FormEvent) {
-    evento.preventDefault();
-    if (!accessToken || guardando) return;
-    setGuardando(true);
-    setErrorDatos(null);
-    setAvisoDatos(null);
-    try {
-      const { user: actualizado } = await actualizarPerfilRequest(accessToken, {
-        name: name.trim(),
-        email: email.trim(),
-        ...(cambiaElCorreo ? { password: claveDeConfirmacion } : {}),
-      });
-      actualizarUsuario(actualizado);
-      setClaveDeConfirmacion("");
-      setAvisoDatos("Listo, tus datos quedaron guardados.");
-    } catch (err) {
-      setErrorDatos(err instanceof Error ? err.message : "No se pudieron guardar los datos");
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function guardarClave(evento: FormEvent) {
-    evento.preventDefault();
-    if (!accessToken || cambiando) return;
-    if (nueva !== repetida) {
-      setErrorClave("Las dos contraseñas nuevas no coinciden");
-      return;
-    }
-    setCambiando(true);
-    setErrorClave(null);
-    setAvisoClave(null);
-    try {
-      reemplazarSesion(await cambiarClaveRequest(accessToken, actual, nueva));
-      setActual("");
-      setNueva("");
-      setRepetida("");
-      setAvisoClave("Contraseña cambiada. Se cerraron las demás sesiones.");
-    } catch (err) {
-      setErrorClave(err instanceof Error ? err.message : "No se pudo cambiar la contraseña");
-    } finally {
-      setCambiando(false);
-    }
-  }
+  const { accessToken } = useAuth();
+  const [seccion, setSeccion] = useState<Seccion>("datos");
 
   return (
-    <section className="mx-auto flex w-full max-w-xl flex-col gap-10 px-4 py-14">
+    <section className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-14">
       <header>
         <p className="caps text-primary">Tu cuenta</p>
         <h1 className="mt-3 font-serif text-4xl">{user.name}</h1>
@@ -124,84 +72,191 @@ function Perfil({ user }: { user: AuthUser }) {
         ) : null}
       </header>
 
-      <form onSubmit={guardarDatos} className="surface flex flex-col gap-4 p-6">
-        <h2 className="font-serif text-2xl">Tus datos</h2>
+      <nav role="tablist" aria-label="Secciones del perfil" className="flex gap-2 overflow-x-auto border-b border-hairline">
+        {SECCIONES.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            role="tab"
+            id={`pestana-${s.id}`}
+            aria-selected={seccion === s.id}
+            aria-controls={`panel-${s.id}`}
+            onClick={() => setSeccion(s.id)}
+            className={cn(
+              "flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm transition-colors",
+              seccion === s.id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Icon icon={s.icon} className="h-4 w-4" />
+            {s.label}
+          </button>
+        ))}
+      </nav>
 
-        <label className="auth-label">
-          Nombre
-          <Input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={120} required className="w-full" />
-        </label>
-
-        <label className="auth-label">
-          Correo electrónico
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full" />
-        </label>
-
-        {/* Con una sesión robada, cambiar el correo bastaría para quedarse la
-            cuenta; por eso hay que confirmar con la contraseña. */}
-        {cambiaElCorreo ? (
-          <label className="auth-label">
-            Confirmá tu contraseña para cambiar el correo
-            <Input
-              type="password"
-              autoComplete="current-password"
-              value={claveDeConfirmacion}
-              onChange={(e) => setClaveDeConfirmacion(e.target.value)}
-              required
-              className="w-full"
-            />
-          </label>
+      <div role="tabpanel" id={`panel-${seccion}`} aria-labelledby={`pestana-${seccion}`} className="surface p-6">
+        {seccion === "datos" ? <Datos user={user} /> : null}
+        {seccion === "seguridad" ? <Seguridad /> : null}
+        {seccion === "direccion" ? (
+          accessToken ? (
+            <DireccionForm accessToken={accessToken} />
+          ) : (
+            <p className="text-sm text-muted-foreground">Cargando…</p>
+          )
         ) : null}
-
-        {errorDatos ? (
-          <p role="alert" className="border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-400">
-            {errorDatos}
-          </p>
-        ) : null}
-        {avisoDatos ? (
-          <p className="flex items-center gap-2 text-sm text-primary">
-            <Icon icon="mdi:check-circle-outline" className="h-4 w-4" />
-            {avisoDatos}
-          </p>
-        ) : null}
-
-        <Button type="submit" disabled={guardando} className="w-fit">
-          {guardando ? "Guardando…" : "Guardar cambios"}
-        </Button>
-      </form>
-
-      <form onSubmit={guardarClave} className="surface flex flex-col gap-4 p-6">
-        <h2 className="font-serif text-2xl">Cambiar contraseña</h2>
-
-        <label className="auth-label">
-          Contraseña actual
-          <Input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} required className="w-full" />
-        </label>
-        <label className="auth-label">
-          Nueva contraseña
-          <Input type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} minLength={8} maxLength={72} required placeholder="Mínimo 8 caracteres" className="w-full" />
-        </label>
-        <label className="auth-label">
-          Repetila
-          <Input type="password" autoComplete="new-password" value={repetida} onChange={(e) => setRepetida(e.target.value)} minLength={8} maxLength={72} required className="w-full" />
-        </label>
-
-        {errorClave ? (
-          <p role="alert" className="border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-400">
-            {errorClave}
-          </p>
-        ) : null}
-        {avisoClave ? (
-          <p className="flex items-center gap-2 text-sm text-primary">
-            <Icon icon="mdi:check-circle-outline" className="h-4 w-4" />
-            {avisoClave}
-          </p>
-        ) : null}
-
-        <Button type="submit" disabled={cambiando} className="w-fit">
-          {cambiando ? "Cambiando…" : "Cambiar contraseña"}
-        </Button>
-      </form>
+      </div>
     </section>
+  );
+}
+
+function Datos({ user }: { user: AuthUser }) {
+  const { accessToken, actualizarUsuario } = useAuth();
+  // Se monta con el usuario ya cargado: alcanza el valor inicial, sin efecto.
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [claveDeConfirmacion, setClaveDeConfirmacion] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const cambiaElCorreo = email.trim().toLowerCase() !== user.email.toLowerCase();
+
+  async function guardar(evento: FormEvent) {
+    evento.preventDefault();
+    if (!accessToken || guardando) return;
+    setGuardando(true);
+    setError(null);
+    setAviso(null);
+    try {
+      const { user: actualizado } = await actualizarPerfilRequest(accessToken, {
+        name: name.trim(),
+        email: email.trim(),
+        ...(cambiaElCorreo ? { password: claveDeConfirmacion } : {}),
+      });
+      actualizarUsuario(actualizado);
+      setClaveDeConfirmacion("");
+      setAviso("Listo, tus datos quedaron guardados.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron guardar los datos");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <form onSubmit={guardar} className="flex flex-col gap-4">
+      <label className="auth-label">
+        Nombre
+        <Input value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={120} required className="w-full" />
+      </label>
+
+      <label className="auth-label">
+        Correo electrónico
+        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full" />
+      </label>
+
+      {/* Con una sesión robada, cambiar el correo bastaría para quedarse la
+          cuenta; por eso hay que confirmar con la contraseña. */}
+      {cambiaElCorreo ? (
+        <label className="auth-label">
+          Confirmá tu contraseña para cambiar el correo
+          <Input
+            type="password"
+            autoComplete="current-password"
+            value={claveDeConfirmacion}
+            onChange={(e) => setClaveDeConfirmacion(e.target.value)}
+            required
+            className="w-full"
+          />
+        </label>
+      ) : null}
+
+      {error ? (
+        <p role="alert" className="border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-400">
+          {error}
+        </p>
+      ) : null}
+      {aviso ? (
+        <p className="flex items-center gap-2 text-sm text-primary">
+          <Icon icon="mdi:check-circle-outline" className="h-4 w-4" />
+          {aviso}
+        </p>
+      ) : null}
+
+      <Button type="submit" disabled={guardando} className="w-fit">
+        {guardando ? "Guardando…" : "Guardar cambios"}
+      </Button>
+    </form>
+  );
+}
+
+function Seguridad() {
+  const { accessToken, reemplazarSesion } = useAuth();
+  const [actual, setActual] = useState("");
+  const [nueva, setNueva] = useState("");
+  const [repetida, setRepetida] = useState("");
+  const [cambiando, setCambiando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  async function guardar(evento: FormEvent) {
+    evento.preventDefault();
+    if (!accessToken || cambiando) return;
+    if (nueva !== repetida) {
+      setError("Las dos contraseñas nuevas no coinciden");
+      return;
+    }
+    setCambiando(true);
+    setError(null);
+    setAviso(null);
+    try {
+      reemplazarSesion(await cambiarClaveRequest(accessToken, actual, nueva));
+      setActual("");
+      setNueva("");
+      setRepetida("");
+      setAviso("Contraseña cambiada. Se cerraron las demás sesiones.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo cambiar la contraseña");
+    } finally {
+      setCambiando(false);
+    }
+  }
+
+  return (
+    <form onSubmit={guardar} className="flex flex-col gap-4">
+      <p className="text-sm text-muted-foreground">
+        Al cambiarla se cierran las sesiones abiertas en otros dispositivos. Esta sigue activa.
+      </p>
+
+      <label className="auth-label">
+        Contraseña actual
+        <Input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} required className="w-full" />
+      </label>
+      <label className="auth-label">
+        Nueva contraseña
+        <Input type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} minLength={8} maxLength={72} required placeholder="Mínimo 8 caracteres" className="w-full" />
+      </label>
+      <label className="auth-label">
+        Repetila
+        <Input type="password" autoComplete="new-password" value={repetida} onChange={(e) => setRepetida(e.target.value)} minLength={8} maxLength={72} required className="w-full" />
+      </label>
+
+      {error ? (
+        <p role="alert" className="border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-400">
+          {error}
+        </p>
+      ) : null}
+      {aviso ? (
+        <p className="flex items-center gap-2 text-sm text-primary">
+          <Icon icon="mdi:check-circle-outline" className="h-4 w-4" />
+          {aviso}
+        </p>
+      ) : null}
+
+      <Button type="submit" disabled={cambiando} className="w-fit">
+        {cambiando ? "Cambiando…" : "Cambiar contraseña"}
+      </Button>
+    </form>
   );
 }

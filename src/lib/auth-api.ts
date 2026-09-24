@@ -1,4 +1,4 @@
-import type { AuthResponse, AuthUser, ResultadoDeLogin } from "@/lib/types";
+import type { AuthResponse, AuthUser, Direccion, ResultadoDeLogin } from "@/lib/types";
 import { API_BASE } from "@/lib/api-base";
 
 async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -77,6 +77,20 @@ export function cambiarClaveRequest(accessToken: string, actual: string, nueva: 
     method: "PUT",
     headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ actual, nueva }),
+  });
+}
+
+export function verDireccionRequest(accessToken: string) {
+  return authFetch<{ direccion: Direccion | null }>("/api/auth/direccion", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function guardarDireccionRequest(accessToken: string, datos: Partial<Direccion>) {
+  return authFetch<{ direccion: Direccion }>("/api/auth/direccion", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(datos),
   });
 }
 

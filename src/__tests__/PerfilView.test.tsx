@@ -6,15 +6,25 @@ import type { AuthUser } from "@/lib/types";
 
 vi.mock("@iconify/react", () => ({ Icon: ({ icon }: { icon: string }) => <span data-icon={icon} /> }));
 
-const { sesion, actualizarUsuario, reemplazarSesion, actualizarPerfil, cambiarClave, replace } =
-  vi.hoisted(() => ({
-    sesion: { user: null as AuthUser | null, loading: false },
-    actualizarUsuario: vi.fn(),
-    reemplazarSesion: vi.fn(),
-    actualizarPerfil: vi.fn(),
-    cambiarClave: vi.fn(),
-    replace: vi.fn(),
-  }));
+const {
+  sesion,
+  actualizarUsuario,
+  reemplazarSesion,
+  actualizarPerfil,
+  cambiarClave,
+  verDireccion,
+  guardarDireccion,
+  replace,
+} = vi.hoisted(() => ({
+  sesion: { user: null as AuthUser | null, loading: false },
+  actualizarUsuario: vi.fn(),
+  reemplazarSesion: vi.fn(),
+  actualizarPerfil: vi.fn(),
+  cambiarClave: vi.fn(),
+  verDireccion: vi.fn(),
+  guardarDireccion: vi.fn(),
+  replace: vi.fn(),
+}));
 
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({
@@ -29,6 +39,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("@/lib/auth-api", () => ({
   actualizarPerfilRequest: actualizarPerfil,
   cambiarClaveRequest: cambiarClave,
+  verDireccionRequest: verDireccion,
+  guardarDireccionRequest: guardarDireccion,
 }));
 
 const cliente: AuthUser = {
@@ -42,6 +54,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   sesion.user = cliente;
   sesion.loading = false;
+  verDireccion.mockResolvedValue({ direccion: null });
 });
 
 describe("PerfilView", () => {
@@ -118,6 +131,7 @@ describe("PerfilView: contraseña", () => {
   async function completarClaves(nueva: string, repetida: string) {
     const user = userEvent.setup();
     render(<PerfilView />);
+    await user.click(screen.getByRole("tab", { name: /Seguridad/ }));
     await user.type(screen.getByLabelText("Contraseña actual"), "miClaveActual");
     await user.type(screen.getByLabelText("Nueva contraseña"), nueva);
     await user.type(screen.getByLabelText("Repetila"), repetida);
@@ -156,5 +170,104 @@ describe("PerfilView: sin sesión", () => {
     render(<PerfilView />);
     expect(replace).not.toHaveBeenCalled();
     expect(screen.getByText(/Cargando tu perfil/)).toBeInTheDocument();
+  });
+});
+
+describe("PerfilView: secciones", () => {
+  it("arranca en Datos y no muestra las otras", () => {
+    render(<PerfilView />);
+
+    expect(screen.getByRole("tab", { name: /Datos/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByLabelText("Nombre")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Contraseña actual")).toBeNull();
+    expect(screen.queryByLabelText("Calle y número")).toBeNull();
+  });
+
+  it("cambia a Seguridad", async () => {
+    const user = userEvent.setup();
+    render(<PerfilView />);
+    await user.click(screen.getByRole("tab", { name: /Seguridad/ }));
+
+    expect(screen.getByLabelText("Contraseña actual")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Nombre")).toBeNull();
+  });
+
+  it("cambia a Dirección y pide la guardada", async () => {
+    const user = userEvent.setup();
+    render(<PerfilView />);
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+
+    expect(await screen.findByLabelText("Calle y número")).toBeInTheDocument();
+    expect(verDireccion).toHaveBeenCalledWith("un-token");
+  });
+});
+
+describe("PerfilView: dirección", () => {
+  async function abrirDireccion() {
+    const user = userEvent.setup();
+    render(<PerfilView />);
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+    await screen.findByLabelText("Calle y número");
+    return user;
+  }
+
+  it("rellena los campos con la dirección ya cargada", async () => {
+    verDireccion.mockResolvedValue({
+      direccion: {
+        recipient: "Esau Morales",
+        phone: "999888777",
+        street: "Av. Siempre Viva 742",
+        reference: "Portón negro",
+        district: "Miraflores",
+        city: "Lima",
+        region: null,
+        postalCode: null,
+      },
+    });
+    await abrirDireccion();
+
+    expect(screen.getByLabelText("Calle y número")).toHaveValue("Av. Siempre Viva 742");
+    expect(screen.getByLabelText("Distrito")).toHaveValue("Miraflores");
+    expect(screen.getByLabelText("Teléfono")).toHaveValue("999888777");
+    // Los nulos se muestran vacíos, no como "null".
+    expect(screen.getByLabelText("Región")).toHaveValue("");
+  });
+
+  it("guarda la dirección cargada a mano", async () => {
+    const user = await abrirDireccion();
+    guardarDireccion.mockResolvedValue({
+      direccion: {
+        recipient: null,
+        phone: null,
+        street: "Jr. Union 123",
+        reference: null,
+        district: "Cercado",
+        city: "Lima",
+        region: null,
+        postalCode: null,
+      },
+    });
+
+    await user.type(screen.getByLabelText("Calle y número"), "Jr. Union 123");
+    await user.type(screen.getByLabelText("Distrito"), "Cercado");
+    await user.type(screen.getByLabelText("Ciudad"), "Lima");
+    await user.click(screen.getByRole("button", { name: "Guardar dirección" }));
+
+    await waitFor(() => expect(guardarDireccion).toHaveBeenCalledOnce());
+    const [token, datos] = guardarDireccion.mock.calls[0]!;
+    expect(token).toBe("un-token");
+    expect(datos).toMatchObject({ street: "Jr. Union 123", district: "Cercado", city: "Lima" });
+  });
+
+  it("avisa si el servidor rechaza la dirección", async () => {
+    const user = await abrirDireccion();
+    guardarDireccion.mockRejectedValue(new Error("La calle es muy corta"));
+
+    await user.type(screen.getByLabelText("Calle y número"), "Jr. Union 123");
+    await user.type(screen.getByLabelText("Distrito"), "Cercado");
+    await user.type(screen.getByLabelText("Ciudad"), "Lima");
+    await user.click(screen.getByRole("button", { name: "Guardar dirección" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("La calle es muy corta");
   });
 });
