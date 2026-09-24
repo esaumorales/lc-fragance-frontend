@@ -188,8 +188,9 @@ describe("PerfilView: secciones", () => {
     render(<PerfilView />);
     await user.click(screen.getByRole("tab", { name: /Seguridad/ }));
 
-    expect(screen.getByLabelText("Contraseña actual")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Nombre")).toBeNull();
+    expect(screen.getByLabelText("Contraseña actual")).toBeVisible();
+    // Sigue montado para no perder lo escrito, pero oculto.
+    expect(screen.getByLabelText("Nombre")).not.toBeVisible();
   });
 
   it("cambia a Dirección y pide la guardada", async () => {
@@ -269,5 +270,44 @@ describe("PerfilView: dirección", () => {
     await user.click(screen.getByRole("button", { name: "Guardar dirección" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("La calle es muy corta");
+  });
+});
+
+describe("PerfilView: no recarga al volver a una sección", () => {
+  it("pide la dirección una sola vez aunque se cambie de pestaña y se vuelva", async () => {
+    const user = userEvent.setup();
+    render(<PerfilView />);
+
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+    await screen.findByLabelText("Calle y número");
+    expect(verDireccion).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("tab", { name: /Datos/ }));
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+
+    // Si el panel se desmontara, esto seria 2 y se veria un "Cargando".
+    expect(verDireccion).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Calle y número")).toBeInTheDocument();
+  });
+
+  it("conserva lo escrito al ir y volver", async () => {
+    const user = userEvent.setup();
+    render(<PerfilView />);
+
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+    await user.type(await screen.findByLabelText("Ciudad"), "Arequipa");
+
+    await user.click(screen.getByRole("tab", { name: /Seguridad/ }));
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+
+    expect(screen.getByLabelText("Ciudad")).toHaveValue("Arequipa");
+  });
+
+  // No se pide antes de que la abran por primera vez.
+  it("no pide la dirección si nunca se abre esa pestaña", async () => {
+    render(<PerfilView />);
+    await screen.findByLabelText("Nombre");
+
+    expect(verDireccion).not.toHaveBeenCalled();
   });
 });

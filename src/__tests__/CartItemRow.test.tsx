@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CartItemRow } from "@/components/molecules/CartItemRow";
 import type { CartItem } from "@/lib/types";
+import { precio } from "@/lib/precio";
 
 vi.mock("next/image", () => ({
   // El mock tiene que ser un <img> plano: la regla de next/image no aplica
@@ -40,7 +41,7 @@ describe("CartItemRow", () => {
     render(
       <CartItemRow item={item} onQuantityChange={vi.fn()} onRemove={vi.fn()} disabled={false} />
     );
-    expect(screen.getByText("$100.00")).toBeInTheDocument();
+    expect(screen.getByText(precio("100.00"))).toBeInTheDocument();
   });
 
   it("llama a onQuantityChange al aumentar la cantidad", async () => {

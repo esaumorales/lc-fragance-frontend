@@ -9,6 +9,7 @@ import type { Cart, CheckoutResult } from "@/lib/types";
 import { CartItemRow } from "@/components/molecules/CartItemRow";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
+import { precio } from "@/lib/precio";
 
 export function CartView() {
   const { user, accessToken, loading: authLoading } = useAuth();
@@ -109,7 +110,7 @@ export function CartView() {
       <div className="flex flex-col gap-4 surface p-6">
         <p className="flex items-center gap-2 text-foreground">
           <Icon icon="mdi:check-circle" className="text-primary" />
-          Pedido #{result.order.id.slice(0, 8)} confirmado — total ${result.order.total}
+          Pedido #{result.order.id.slice(0, 8)} confirmado — total {precio(result.order.total)}
         </p>
         <p className="text-sm text-muted-foreground">
           Para finalizar, pagá por Yape a nombre de{" "}
@@ -159,7 +160,7 @@ export function CartView() {
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
       <div className="flex items-center justify-between">
-        <p className="text-lg text-foreground">Total: ${total.toFixed(2)}</p>
+        <p className="text-lg text-foreground">Total: {precio(total)}</p>
         <Button variant="primary" disabled={mutating} onClick={handleCheckout} className="gap-2">
           <Icon icon="mdi:whatsapp" />
           Finalizar pedido

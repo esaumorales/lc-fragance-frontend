@@ -5,6 +5,7 @@ import { AddToCartButton } from "@/components/molecules/AddToCartButton";
 import { ProductVisual } from "@/components/organisms/ProductVisual";
 import { fetchProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
+import { precio } from "@/lib/precio";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -50,7 +51,7 @@ export default async function ProductPage({ params }: PageProps) {
           <h1 className="font-serif text-5xl leading-tight tracking-wide text-foreground">
             {product.name}
           </h1>
-          <p className="text-3xl text-primary">${product.price}</p>
+          <p className="text-3xl text-primary">{precio(product.price)}</p>
           <p className="text-sm leading-relaxed text-muted-foreground">{product.description}</p>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Icon icon="mdi:package-variant-closed" />

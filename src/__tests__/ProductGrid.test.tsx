@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { ProductGrid } from "@/components/organisms/ProductGrid";
 import type { Product } from "@/lib/types";
+import { precio } from "@/lib/precio";
 
 vi.mock("next/image", () => ({
   // El mock tiene que ser un <img> plano: la regla de next/image no aplica
@@ -70,7 +71,7 @@ describe("ProductGrid", () => {
   it("renderiza una tarjeta por producto", () => {
     render(<ProductGrid products={[product]} />);
     expect(screen.getByText("Bleu de Fragance")).toBeInTheDocument();
-    expect(screen.getByText("$49.90")).toBeInTheDocument();
+    expect(screen.getByText(precio("49.90"))).toBeInTheDocument();
   });
 
   it("muestra 'Sin stock' cuando stock es 0", () => {

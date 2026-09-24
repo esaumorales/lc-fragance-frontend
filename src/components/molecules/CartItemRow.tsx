@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { CartItem } from "@/lib/types";
 import { Icon } from "@/components/atoms/Icon";
+import { precio } from "@/lib/precio";
 
 type CartItemRowProps = {
   item: CartItem;
@@ -29,7 +30,7 @@ export function CartItemRow({ item, onQuantityChange, onRemove, disabled }: Cart
 
       <div className="flex-1">
         <p className="text-sm font-medium text-foreground">{item.product.name}</p>
-        <p className="text-sm text-muted-foreground">${item.product.price}</p>
+        <p className="text-sm text-muted-foreground">{precio(item.product.price)}</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -54,7 +55,7 @@ export function CartItemRow({ item, onQuantityChange, onRemove, disabled }: Cart
         </button>
       </div>
 
-      <p className="w-16 text-right text-sm text-foreground">${subtotal}</p>
+      <p className="w-16 text-right text-sm text-foreground">{precio(subtotal)}</p>
 
       <button
         type="button"

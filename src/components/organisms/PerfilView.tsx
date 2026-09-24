@@ -52,6 +52,15 @@ export function PerfilView() {
 function Perfil({ user }: { user: AuthUser }) {
   const { accessToken } = useAuth();
   const [seccion, setSeccion] = useState<Seccion>("datos");
+  // Una seccion se monta la primera vez que se abre y despues solo se oculta:
+  // si se desmontara, volver a Direccion pediria la direccion de nuevo y se
+  // veria un "Cargando" cada vez.
+  const [visitadas, setVisitadas] = useState<Seccion[]>(["datos"]);
+
+  function abrir(id: Seccion) {
+    setSeccion(id);
+    setVisitadas((previas) => (previas.includes(id) ? previas : [...previas, id]));
+  }
 
   return (
     <section className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-14">
@@ -81,7 +90,7 @@ function Perfil({ user }: { user: AuthUser }) {
             id={`pestana-${s.id}`}
             aria-selected={seccion === s.id}
             aria-controls={`panel-${s.id}`}
-            onClick={() => setSeccion(s.id)}
+            onClick={() => abrir(s.id)}
             className={cn(
               "flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm transition-colors",
               seccion === s.id
@@ -95,17 +104,30 @@ function Perfil({ user }: { user: AuthUser }) {
         ))}
       </nav>
 
-      <div role="tabpanel" id={`panel-${seccion}`} aria-labelledby={`pestana-${seccion}`} className="surface p-6">
-        {seccion === "datos" ? <Datos user={user} /> : null}
-        {seccion === "seguridad" ? <Seguridad /> : null}
-        {seccion === "direccion" ? (
-          accessToken ? (
-            <DireccionForm accessToken={accessToken} />
-          ) : (
-            <p className="text-sm text-muted-foreground">Cargando…</p>
-          )
-        ) : null}
-      </div>
+      {SECCIONES.map((s) =>
+        visitadas.includes(s.id) ? (
+          <div
+            key={s.id}
+            role="tabpanel"
+            id={`panel-${s.id}`}
+            aria-labelledby={`pestana-${s.id}`}
+            // El atributo, y no una clase: ademas lo saca del arbol de
+            // accesibilidad, asi un lector de pantalla no lee tres paneles.
+            hidden={seccion !== s.id}
+            className="surface p-6"
+          >
+            {s.id === "datos" ? <Datos user={user} /> : null}
+            {s.id === "seguridad" ? <Seguridad /> : null}
+            {s.id === "direccion" ? (
+              accessToken ? (
+                <DireccionForm accessToken={accessToken} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Cargando…</p>
+              )
+            ) : null}
+          </div>
+        ) : null
+      )}
     </section>
   );
 }

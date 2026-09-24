@@ -4,6 +4,7 @@ import type { Product } from "@/lib/types";
 import { Icon } from "@/components/atoms/Icon";
 
 import { AddToCartButton } from "@/components/molecules/AddToCartButton";
+import { precio } from "@/lib/precio";
 
 // Detalle editorial breve tomado de attributes (agnostico de rubro): notas
 // para perfumes, marca para tecnologia, o nada si el producto no trae esos
@@ -82,7 +83,7 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
 
         <div className="mt-2 flex items-baseline justify-between gap-3">
-          <p className="text-sm tracking-wide text-foreground">${product.price}</p>
+          <p className="text-sm tracking-wide text-foreground">{precio(product.price)}</p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             {product.stock > 0 ? `${product.stock} disp.` : "Sin stock"}
           </p>

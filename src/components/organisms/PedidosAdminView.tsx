@@ -6,6 +6,7 @@ import { avanzarPedido, cancelarPedido, confirmarPedido, listarPedidos } from "@
 import { cn } from "@/lib/cn";
 import type { EstadoPedido, Pedido } from "@/lib/types";
 import { Icon } from "@/components/atoms/Icon";
+import { precio } from "@/lib/precio";
 
 const ESTADOS: { id: EstadoPedido | "TODOS"; label: string }[] = [
   { id: "PENDING", label: "Por confirmar" },
@@ -139,7 +140,7 @@ export function PedidosAdminView() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-serif text-xl text-foreground">${pedido.total}</p>
+                  <p className="font-serif text-xl text-foreground">{precio(pedido.total)}</p>
                   <p
                     className={cn(
                       "text-xs uppercase tracking-[0.1em]",
@@ -158,7 +159,7 @@ export function PedidosAdminView() {
                       {item.quantity}× {item.product.name}
                     </span>
                     <span className="shrink-0 text-muted-foreground">
-                      ${item.unitPrice} c/u · quedan {item.product.stock}
+                      {precio(item.unitPrice)} c/u · quedan {item.product.stock}
                     </span>
                   </li>
                 ))}

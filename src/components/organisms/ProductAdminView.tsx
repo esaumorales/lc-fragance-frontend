@@ -12,6 +12,7 @@ import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
 import { BottleIcon } from "@/components/atoms/BottleIcon";
 import { ProductFormDialog } from "@/components/organisms/ProductFormDialog";
+import { precio } from "@/lib/precio";
 
 // Qué está abierto: nada, el alta, o la edición de un producto.
 type Formulario = { modo: "cerrado" } | { modo: "alta" } | { modo: "edicion"; producto: Product };
@@ -142,7 +143,7 @@ export function ProductAdminView() {
                     {product.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {product.sku} · ${product.price} ·{" "}
+                    {product.sku} · {precio(product.price)} ·{" "}
                     {categories.find((c) => c.id === product.categoryId)?.name ?? "Sin categoría"}
                   </p>
                 </div>
