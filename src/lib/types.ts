@@ -49,6 +49,8 @@ export type DesafioSegundoFactor = {
 
 export type ResultadoDeLogin = AuthResponse | DesafioSegundoFactor;
 
+export type RolDeUsuario = "CUSTOMER" | "ADMIN" | "SUPERADMIN";
+
 export type Administrador = {
   id: string;
   name: string;

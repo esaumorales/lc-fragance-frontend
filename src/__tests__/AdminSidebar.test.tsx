@@ -1,36 +1,39 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AdminSidebar } from "@/components/organisms/AdminSidebar";
-import type { AuthUser } from "@/lib/types";
 
-const { usuario } = vi.hoisted(() => ({ usuario: { actual: null as AuthUser | null } }));
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: usuario.actual }) }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin" }));
 
-function conRol(role: AuthUser["role"]) {
-  usuario.actual = { id: "1", name: "Esau", email: "duenio@example.com", role };
-}
+const ENLACES = [
+  ["Resumen", "/admin"],
+  ["Productos", "/admin/productos"],
+  ["Pedidos", "/admin/pedidos"],
+  ["Categorías", "/admin/categorias"],
+  ["Usuarios", "/admin/usuarios"],
+] as const;
 
 describe("AdminSidebar", () => {
-  it("le muestra Administradores al superadministrador", () => {
-    conRol("SUPERADMIN");
+  it("lleva a todas las secciones del panel", () => {
     render(<AdminSidebar />);
-    expect(screen.getByRole("link", { name: /Administradores/ })).toHaveAttribute(
-      "href",
-      "/admin/administradores"
-    );
+
+    for (const [etiqueta, destino] of ENLACES) {
+      expect(screen.getByRole("link", { name: new RegExp(etiqueta) })).toHaveAttribute(
+        "href",
+        destino
+      );
+    }
   });
 
-  it("se la esconde a un administrador común", () => {
-    conRol("ADMIN");
+  // Ver la lista alcanza con ser admin; lo que un admin no puede hacer lo
+  // corta el backend y la propia pantalla.
+  it("Usuarios no depende del rol", () => {
     render(<AdminSidebar />);
-    expect(screen.queryByRole("link", { name: /Administradores/ })).toBeNull();
+    expect(screen.getByRole("link", { name: /Usuarios/ })).toBeInTheDocument();
   });
 
-  it("los enlaces del catálogo los ven los dos", () => {
-    conRol("ADMIN");
+  it("marca la sección actual", () => {
     render(<AdminSidebar />);
-    expect(screen.getByRole("link", { name: /Productos/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Categorías/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Resumen/ })).toHaveAttribute("data-active", "true");
+    expect(screen.getByRole("link", { name: /Pedidos/ })).toHaveAttribute("data-active", "false");
   });
 });
