@@ -61,6 +61,8 @@ const cliente: UsuarioDelPanel = {
     city: "Lima",
     region: null,
     postalCode: null,
+    latitude: null,
+    longitude: null,
   },
 };
 

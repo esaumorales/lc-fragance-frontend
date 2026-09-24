@@ -426,3 +426,9 @@ body { line-height: 1.6; }
 
 .auth-dialog > div > div:first-of-type img { mix-blend-mode: var(--image-blend); filter: var(--image-filter); }
 
+
+/* El marcador del mapa se dibuja en HTML: los iconos de Leaflet son imagenes
+   que el empaquetador no resuelve solo y quedan rotas. */
+.pin-mapa { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); border: 3px solid var(--background); box-shadow: 0 2px 8px rgb(0 0 0 / .35); }
+.mapa-direccion { border-radius: 8px; z-index: 0; }
+.mapa-direccion .leaflet-control-attribution { font-size: 10px; }

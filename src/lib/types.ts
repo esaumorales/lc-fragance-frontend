@@ -88,6 +88,8 @@ export type Direccion = {
   city: string;
   region: string | null;
   postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type EstadoPedido = "PENDING" | "PAID" | "SHIPPED" | "DELIVERED" | "CANCELLED";

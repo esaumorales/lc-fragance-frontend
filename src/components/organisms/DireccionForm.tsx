@@ -6,6 +6,7 @@ import type { Direccion } from "@/lib/types";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
+import { MapaDireccion } from "@/components/organisms/MapaDireccion";
 
 const VACIA = {
   recipient: "",
@@ -17,6 +18,8 @@ const VACIA = {
   region: "",
   postalCode: "",
 };
+
+type Punto = { latitude: number; longitude: number } | null;
 
 function desdeDireccion(direccion: Direccion) {
   return {
@@ -33,6 +36,8 @@ function desdeDireccion(direccion: Direccion) {
 
 export function DireccionForm({ accessToken }: { accessToken: string }) {
   const [form, setForm] = useState(VACIA);
+  // El punto va aparte de los campos de texto: es opcional y lo maneja el mapa.
+  const [punto, setPunto] = useState<Punto>(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +46,11 @@ export function DireccionForm({ accessToken }: { accessToken: string }) {
   const cargar = useCallback(() => {
     verDireccionRequest(accessToken)
       .then(({ direccion }) => {
-        if (direccion) setForm(desdeDireccion(direccion));
+        if (!direccion) return;
+        setForm(desdeDireccion(direccion));
+        if (direccion.latitude !== null && direccion.longitude !== null) {
+          setPunto({ latitude: direccion.latitude, longitude: direccion.longitude });
+        }
       })
       .catch(() => setError("No se pudo cargar tu dirección"))
       .finally(() => setCargando(false));
@@ -65,7 +74,11 @@ export function DireccionForm({ accessToken }: { accessToken: string }) {
     setError(null);
     setAviso(null);
     try {
-      const { direccion } = await guardarDireccionRequest(accessToken, form);
+      const { direccion } = await guardarDireccionRequest(accessToken, {
+        ...form,
+        latitude: punto?.latitude ?? null,
+        longitude: punto?.longitude ?? null,
+      });
       setForm(desdeDireccion(direccion));
       setAviso("Dirección guardada.");
     } catch (err) {
@@ -130,6 +143,12 @@ export function DireccionForm({ accessToken }: { accessToken: string }) {
           <Input {...campo("postalCode")} placeholder="15074" maxLength={20} className="w-full" />
         </label>
       </div>
+
+      <MapaDireccion
+        latitude={punto?.latitude ?? null}
+        longitude={punto?.longitude ?? null}
+        onCambio={setPunto}
+      />
 
       {error ? (
         <p role="alert" className="border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-400">

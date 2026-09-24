@@ -223,6 +223,8 @@ describe("PerfilView: dirección", () => {
         city: "Lima",
         region: null,
         postalCode: null,
+        latitude: null,
+        longitude: null,
       },
     });
     await abrirDireccion();
@@ -246,6 +248,8 @@ describe("PerfilView: dirección", () => {
         city: "Lima",
         region: null,
         postalCode: null,
+        latitude: null,
+        longitude: null,
       },
     });
 
@@ -309,5 +313,62 @@ describe("PerfilView: no recarga al volver a una sección", () => {
     await screen.findByLabelText("Nombre");
 
     expect(verDireccion).not.toHaveBeenCalled();
+  });
+});
+
+describe("PerfilView: el punto del mapa", () => {
+  it("guarda la dirección con el punto en null si no se marcó ninguno", async () => {
+    const user = userEvent.setup();
+    render(<PerfilView />);
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+    await screen.findByLabelText("Calle y número");
+
+    guardarDireccion.mockResolvedValue({
+      direccion: {
+        recipient: null,
+        phone: null,
+        street: "Jr. Union 123",
+        reference: null,
+        district: "Cercado",
+        city: "Lima",
+        region: null,
+        postalCode: null,
+        latitude: null,
+        longitude: null,
+      },
+    });
+
+    await user.type(screen.getByLabelText("Calle y número"), "Jr. Union 123");
+    await user.type(screen.getByLabelText("Distrito"), "Cercado");
+    await user.type(screen.getByLabelText("Ciudad"), "Lima");
+    await user.click(screen.getByRole("button", { name: "Guardar dirección" }));
+
+    await waitFor(() => expect(guardarDireccion).toHaveBeenCalledOnce());
+    const [, datos] = guardarDireccion.mock.calls[0]!;
+    expect(datos.latitude).toBeNull();
+    expect(datos.longitude).toBeNull();
+  });
+
+  it("muestra el punto guardado cuando la dirección ya tiene coordenadas", async () => {
+    verDireccion.mockResolvedValue({
+      direccion: {
+        recipient: null,
+        phone: null,
+        street: "Jr. Union 123",
+        reference: null,
+        district: "Cercado",
+        city: "Lima",
+        region: null,
+        postalCode: null,
+        latitude: -12.0464,
+        longitude: -77.0428,
+      },
+    });
+    const user = userEvent.setup();
+    render(<PerfilView />);
+    await user.click(screen.getByRole("tab", { name: /Dirección/ }));
+
+    expect(await screen.findByText(/-12\.04640, -77\.04280/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Quitar punto/ })).toBeInTheDocument();
   });
 });
