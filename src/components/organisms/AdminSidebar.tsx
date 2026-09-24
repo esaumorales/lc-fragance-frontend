@@ -10,6 +10,7 @@ import { esSuperadmin } from "@/lib/roles";
 const links = [
   { href: "/admin", label: "Resumen", icon: "mdi:view-dashboard-outline" },
   { href: "/admin/productos", label: "Productos", icon: "mdi:bottle-tonic-outline" },
+  { href: "/admin/pedidos", label: "Pedidos", icon: "mdi:receipt-text-outline" },
   { href: "/admin/categorias", label: "Categorías", icon: "mdi:shape-outline" },
 ];
 

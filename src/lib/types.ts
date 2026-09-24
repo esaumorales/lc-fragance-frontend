@@ -87,3 +87,19 @@ export type Direccion = {
   region: string | null;
   postalCode: string | null;
 };
+
+export type EstadoPedido = "PENDING" | "PAID" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+
+export type Pedido = {
+  id: string;
+  status: EstadoPedido;
+  total: string;
+  createdAt: string;
+  user: { id: string; name: string; email: string };
+  items: {
+    id: string;
+    quantity: number;
+    unitPrice: string;
+    product: { id: string; name: string; sku: string; stock: number };
+  }[];
+};
