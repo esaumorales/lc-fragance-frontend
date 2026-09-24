@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/atoms/ThemeToggle";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
+import { puedeEntrarAlPanel } from "@/lib/roles";
 
 const navLinks = [
   { href: "/perfumes", label: "Perfumes" },
@@ -82,7 +83,7 @@ function AccountMenu() {
             <p className="truncate text-xs text-muted-foreground">{user.email}</p>
           </div>
           <div className="flex flex-col py-2">
-            {user.role === "ADMIN" ? (
+            {puedeEntrarAlPanel(user.role) ? (
               <Link
                 href="/admin"
                 onClick={() => setOpen(false)}
@@ -220,7 +221,7 @@ export function Navbar() {
             ))}
 
             <div className="mt-10 flex flex-col gap-5">
-              {!loading && user?.role === "ADMIN" ? (
+              {!loading && puedeEntrarAlPanel(user?.role) ? (
                 <Link
                   href="/admin"
                   onClick={() => setMenuOpen(false)}
