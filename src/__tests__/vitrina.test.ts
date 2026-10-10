@@ -112,15 +112,15 @@ describe("capa", () => {
 describe("fotogramaParaDistancia", () => {
   it("usa los extremos laterales y el fotograma frontal en el centro", () => {
     expect(fotogramaParaDistancia(-1)).toBe(0);
-    expect(fotogramaParaDistancia(0)).toBe(5);
-    expect(fotogramaParaDistancia(1)).toBe(10);
+    expect(fotogramaParaDistancia(0)).toBe(7);
+    expect(fotogramaParaDistancia(1)).toBe(14);
   });
 
   it("recorre los pasos intermedios y respeta los límites", () => {
-    expect(fotogramaParaDistancia(-0.5)).toBe(3);
-    expect(fotogramaParaDistancia(0.5)).toBe(8);
+    expect(fotogramaParaDistancia(-0.5)).toBe(4);
+    expect(fotogramaParaDistancia(0.5)).toBe(11);
     expect(fotogramaParaDistancia(-9)).toBe(0);
-    expect(fotogramaParaDistancia(9)).toBe(10);
+    expect(fotogramaParaDistancia(9)).toBe(14);
   });
 });
 
@@ -132,8 +132,8 @@ describe("la lista de perfumes", () => {
   it("cada uno trae imagen, nombre, nota y destino", () => {
     for (const perfume of PERFUMES_VITRINA) {
       expect(perfume.imagen).toMatch(/^\/hero\/perfumes\/.+\.(webp|png)$/);
-      expect(perfume.vistas).toHaveLength(11);
-      expect(perfume.vistas[5]).toBe(perfume.imagen);
+      expect(perfume.vistas).toHaveLength(15);
+      expect(perfume.vistas[7]).toBe(perfume.imagen);
       for (const vista of perfume.vistas) expect(vista).toMatch(/^\/hero\/perfumes\/.+\.webp$/);
       expect(perfume.nombre.length).toBeGreaterThan(0);
       expect(perfume.nota.length).toBeGreaterThan(0);

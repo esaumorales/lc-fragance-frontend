@@ -33,6 +33,7 @@ function pesoDeVista(indice: number, distancia: number): number {
 export function HeroVitrina() {
   const seccion = useRef<HTMLElement>(null);
   const piezas = useRef<(HTMLElement | null)[]>([]);
+  const decodificaciones = useRef(new WeakMap<HTMLImageElement, Promise<void>>());
   const pendiente = useRef(false);
   const [centrada, setCentrada] = useState(INICIAL);
   const [seleccionado, setSeleccionado] = useState<PerfumeDeVitrina | null>(null);
@@ -54,9 +55,33 @@ export function HeroVitrina() {
       pieza.style.transform = transformar(distancia);
       pieza.style.opacity = String(opacidad);
       pieza.style.zIndex = String(capa(distancia));
-      vistas.forEach((vista, indiceVista) => {
-        vista.style.opacity = String(pesoDeVista(indiceVista, distancia));
-      });
+      const fotograma = fotogramaParaDistancia(distancia);
+      pieza.dataset.fotogramaDeseado = String(fotograma);
+      if (pieza.dataset.fotogramaActual !== String(fotograma) && pieza.dataset.fotogramaSolicitado !== String(fotograma)) {
+        const siguiente = vistas[fotograma];
+        if (siguiente) {
+          pieza.dataset.fotogramaSolicitado = String(fotograma);
+          let lista = decodificaciones.current.get(siguiente);
+          if (!lista) {
+            lista = siguiente.decode();
+            decodificaciones.current.set(siguiente, lista);
+          }
+          void lista.then(() => {
+            if (!pieza.isConnected || pieza.dataset.fotogramaDeseado !== String(fotograma)) {
+              if (pieza.dataset.fotogramaSolicitado === String(fotograma)) pieza.dataset.fotogramaSolicitado = "";
+              return;
+            }
+            const anterior = vistas[Number(pieza.dataset.fotogramaActual)];
+            siguiente.style.opacity = "1";
+            if (anterior && anterior !== siguiente) anterior.style.opacity = "0";
+            pieza.dataset.fotogramaActual = String(fotograma);
+            pieza.dataset.fotogramaSolicitado = "";
+          }).catch(() => {
+            decodificaciones.current.delete(siguiente);
+            if (pieza.dataset.fotogramaSolicitado === String(fotograma)) pieza.dataset.fotogramaSolicitado = "";
+          });
+        }
+      }
       // Transparente pero no oculto: con visibility o display, los frascos de
       // los extremos se caen del arbol de accesibilidad y el lector de
       // pantalla deja de nombrar media coleccion.
@@ -158,6 +183,7 @@ export function HeroVitrina() {
                   piezas.current[indice] = nodo;
                 }}
                 className="vitrina-pieza"
+                data-fotograma-actual={fotogramaParaDistancia(distancia)}
                 data-centrada={Math.abs(distancia) < 0.5 ? "true" : "false"}
                 style={{
                   transform: transformar(distancia),
@@ -169,16 +195,16 @@ export function HeroVitrina() {
                 <button type="button" onClick={() => setSeleccionado(perfume)} onFocus={() => alEnfocar(indice)} aria-label={`Descubrir ${perfume.nombre}`}>
                   {perfume.vistas.map((ruta, indiceVista) => (
                     // Solo la fotografía frontal aporta texto alternativo; las
-                    // otras diez son fotogramas decorativos de la misma pieza.
+                    // otras catorce son fotogramas decorativos de la misma pieza.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       key={ruta}
                       className="vitrina-vista"
                       src={ruta}
-                      alt={indiceVista === 5 ? `${perfume.nombre}, ${perfume.nota}` : ""}
-                      aria-hidden={indiceVista === 5 ? undefined : true}
+                      alt={indiceVista === 7 ? `${perfume.nombre}, ${perfume.nota}` : ""}
+                      aria-hidden={indiceVista === 7 ? undefined : true}
                       style={{ opacity: pesoDeVista(indiceVista, distancia) }}
-                      fetchPriority={indiceVista === 5 ? (indice === INICIAL ? "high" : "auto") : "low"}
+                      fetchPriority={indiceVista === 7 ? (indice === INICIAL ? "high" : "auto") : "low"}
                       decoding="async"
                       draggable={false}
                     />

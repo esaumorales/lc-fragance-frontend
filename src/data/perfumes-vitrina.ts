@@ -8,7 +8,7 @@
 export type PerfumeDeVitrina = {
   /** Vista frontal, ruta dentro de public/. */
   imagen: string;
-  /** Once ángulos ordenados, de derecha a izquierda; el centro es frontal. */
+  /** Quince ángulos ordenados, de derecha a izquierda; el centro es frontal. */
   vistas: readonly string[];
   nombre: string;
   /** Las notas, en dos o tres palabras: va debajo del nombre. */
@@ -25,9 +25,13 @@ function secuencia(base: string): readonly string[] {
     `${ruta}-right20.webp`,
     `${ruta}-right16.webp`,
     `${ruta}-right12.webp`,
+    `${ruta}-right10.webp`,
     `${ruta}-right08.webp`,
+    `${ruta}-right04.webp`,
     `${ruta}.webp`,
+    `${ruta}-left04.webp`,
     `${ruta}-left08.webp`,
+    `${ruta}-left10.webp`,
     `${ruta}-left12.webp`,
     `${ruta}-left16.webp`,
     `${ruta}-left20.webp`,

@@ -57,8 +57,8 @@ export const PERSPECTIVA = Math.round(ARCO.radio * 1.45);
 
 /** Fotograma más cercano al ángulo actual; evita superponer dos siluetas. */
 export function fotogramaParaDistancia(distancia: number): number {
-  // Once fotos: derecha 25/20/16/12/8, frente, izquierda 8/12/16/20/25.
-  const posicion = Math.min(10, Math.max(0, 5 + distancia * 5));
+  // Quince fotos: pasos de 4° y 10° cerca del frente, luego 12/16/20/25°.
+  const posicion = Math.min(14, Math.max(0, 7 + distancia * 7));
   return Math.round(posicion);
 }
 

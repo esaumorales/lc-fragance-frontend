@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { ThemeToggle } from "@/components/atoms/ThemeToggle";
 import type { PerfumeDeVitrina } from "@/data/perfumes-vitrina";
 
 type Props = { perfume: PerfumeDeVitrina | null; onClose: () => void };
@@ -33,7 +34,10 @@ export function PerfumeSpotlightDialog({ perfume, onClose }: Props) {
         <div className="perfume-spotlight-contenido">
           <div className="perfume-spotlight-barra">
             <span>LC FRAGANCE <i>✦</i> LA COLECCIÓN</span>
-            <button type="button" onClick={onClose} aria-label="Volver a la vitrina">✕</button>
+            <div className="perfume-spotlight-acciones">
+              <ThemeToggle />
+              <button type="button" onClick={onClose} aria-label="Volver a la vitrina">✕</button>
+            </div>
           </div>
           <div className="perfume-spotlight-cuerpo">
             <div className="perfume-spotlight-texto">
