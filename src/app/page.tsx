@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CatalogLayout } from "@/components/templates/CatalogLayout";
 import { ProductGrid } from "@/components/organisms/ProductGrid";
-import { Hero } from "@/components/organisms/Hero";
+import { HeroVitrina } from "@/components/organisms/HeroVitrina";
 import { Icon } from "@/components/atoms/Icon";
 import { Reveal } from "@/components/atoms/Reveal";
 import type { Product } from "@/lib/types";
@@ -36,7 +36,7 @@ export default async function HomePage() {
   }
 
   return (
-    <CatalogLayout hero={<Hero />}>
+    <CatalogLayout hero={<HeroVitrina />}>
       {/* Rotulo chico, titulo grande y el enlace al costado. */}
       <Reveal>
       <div className="collection-header flex flex-wrap items-end justify-between gap-6 border-b border-hairline/50 pb-8">

@@ -432,3 +432,129 @@ body { line-height: 1.6; }
 .pin-mapa { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--primary); border: 3px solid var(--background); box-shadow: 0 2px 8px rgb(0 0 0 / .35); }
 .mapa-direccion { border-radius: 8px; z-index: 0; }
 .mapa-direccion .leaflet-control-attribution { font-size: 10px; }
+
+/* --- Vitrina del heroe -------------------------------------------------- */
+/* La seccion es alta a proposito: su recorrido es el que corre la fila. */
+.vitrina { position: relative; isolation: isolate; background: radial-gradient(ellipse 55% 58% at 50% 58%, #30291b 0%, #161410 51%, #0b0b0b 100%); border-bottom: 1px solid var(--border); }
+.vitrina::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse 62% 46% at 50% 73%, rgb(212 175 55 / .14), transparent 72%), linear-gradient(90deg, transparent 0%, rgb(245 241 231 / .025) 50%, transparent 100%); }
+.vitrina-pegada { position: sticky; top: var(--alto-cabecera, 0px); height: calc(100vh - var(--alto-cabecera, 0px)); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; align-items: center; gap: clamp(5px, 1.5vh, 18px); padding: clamp(18px, 3vh, 34px) var(--page-gutter) clamp(18px, 3vh, 34px); overflow: hidden; }
+
+.vitrina-encabezado { text-align: center; }
+.vitrina-rotulo { display: inline-flex; align-items: center; gap: 13px; }
+.vitrina-rotulo > span { width: 28px; height: 1px; background: var(--primary); }
+.vitrina-titulo { margin-top: clamp(8px, 1.3vh, 15px); font-family: var(--font-serif), Georgia, serif; font-weight: 400; font-size: clamp(34px, 4.6vw, 66px); line-height: 1.01; letter-spacing: -.035em; color: var(--foreground); }
+.vitrina-titulo em { color: var(--primary); font-weight: 300; }
+
+/* El arco. Las piezas se apilan en el centro y las coloca el script. */
+.vitrina-pista { position: relative; isolation: isolate; transform-style: preserve-3d; min-height: 0; height: 100%; }
+.vitrina-pista::before { content: ""; position: absolute; left: 50%; top: 78%; width: min(83vw, 1080px); height: 90px; transform: translate(-50%, -50%); background: radial-gradient(ellipse, rgb(212 175 55 / .25), rgb(212 175 55 / .06) 46%, transparent 72%); filter: blur(18px); pointer-events: none; }
+.vitrina-pista::after { content: ""; position: absolute; left: 50%; top: 83%; width: min(94vw, 1220px); height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgb(212 175 55 / .22) 25%, rgb(212 175 55 / .58) 50%, rgb(212 175 55 / .22) 75%, transparent); pointer-events: none; }
+.vitrina-pieza { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: clamp(240px, 29vw, 400px); height: clamp(290px, 48vh, 530px); transform-style: preserve-3d; will-change: transform, opacity; transition: transform .18s ease-out, opacity .18s ease-out; }
+.vitrina-pieza img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.vitrina-pieza button { position: relative; display: block; width: 100%; height: 100%; border: 0; background: none; padding: 0; cursor: pointer; border-radius: 4px; filter: drop-shadow(0 26px 30px rgb(0 0 0 / .48)); }
+.vitrina-pieza[data-centrada="true"] button { filter: drop-shadow(0 34px 34px rgb(0 0 0 / .6)) drop-shadow(0 0 24px rgb(212 175 55 / .19)); animation: vitrina-flotar 4.5s ease-in-out infinite alternate; }
+.vitrina-pieza button:focus-visible { outline: 1px solid var(--primary); outline-offset: 10px; }
+@keyframes vitrina-flotar { from { transform: translateY(2px); } to { transform: translateY(-7px); } }
+
+/* El halo del piso, que apoya al frasco del frente. */
+.vitrina-pedestal { position: absolute; left: 50%; top: 81%; width: clamp(240px, 36vw, 520px); height: clamp(20px, 3vh, 36px); translate: -50% 0; border-radius: 50%; background: radial-gradient(ellipse, rgb(0 0 0 / .54), rgb(0 0 0 / .14) 42%, transparent 72%); filter: blur(6px); pointer-events: none; }
+.vitrina-escena-rotulo, .vitrina-escena-numero { position: absolute; z-index: 60; top: 50%; color: var(--muted-foreground); font-size: var(--text-3xs); letter-spacing: .28em; writing-mode: vertical-rl; text-transform: uppercase; pointer-events: none; }
+.vitrina-escena-rotulo { left: 0; transform: translateY(-50%) rotate(180deg); }
+.vitrina-escena-numero { right: 0; transform: translateY(-50%); }
+
+.vitrina-ficha { text-align: center; }
+.vitrina-nombre { max-width: 90vw; margin-inline: auto; font-family: var(--font-serif), Georgia, serif; font-weight: 300; font-size: clamp(20px, 2.3vw, 31px); letter-spacing: .02em; line-height: 1.12; color: var(--foreground); }
+.vitrina-nota { margin-top: 6px; font-size: var(--text-3xs); letter-spacing: .22em; text-transform: uppercase; color: var(--muted-foreground); }
+.vitrina-accion { margin-top: clamp(14px, 2vh, 24px); }
+.vitrina-indicador { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: clamp(12px, 2vh, 22px); font-size: var(--text-3xs); letter-spacing: .2em; text-transform: uppercase; color: var(--muted-foreground); }
+.vitrina-indicador span { color: var(--primary); }
+.vitrina-indicador i { width: 26px; height: 1px; background: var(--hairline); }
+
+@media (min-width: 900px) {
+  .vitrina-encabezado { text-align: left; }
+}
+
+:root[data-theme="light"] .vitrina { background: radial-gradient(ellipse 62% 58% at 50% 60%, #fffdf8 0%, #f7f2e8 55%, #eee7d9 100%); }
+:root[data-theme="light"] .vitrina::before { background: radial-gradient(ellipse 65% 38% at 50% 74%, rgb(184 134 11 / .13), transparent 70%); }
+:root[data-theme="light"] .vitrina-pista::before { background: radial-gradient(ellipse, rgb(184 134 11 / .14), transparent 72%); }
+:root[data-theme="light"] .vitrina-pista::after { background: linear-gradient(90deg, transparent, rgb(137 103 31 / .18) 25%, rgb(137 103 31 / .4) 50%, rgb(137 103 31 / .18) 75%, transparent); }
+:root[data-theme="light"] .vitrina-pieza button { filter: drop-shadow(0 25px 25px rgb(50 38 17 / .2)); }
+:root[data-theme="light"] .vitrina-pieza[data-centrada="true"] button { filter: drop-shadow(0 32px 30px rgb(50 38 17 / .28)) drop-shadow(0 0 24px rgb(184 134 11 / .13)); }
+:root[data-theme="light"] .vitrina-pedestal { background: radial-gradient(ellipse, rgb(55 40 19 / .25), rgb(55 40 19 / .08) 45%, transparent 72%); }
+
+@media (max-width: 760px) {
+  /* El arco entero se achica: el radio viene en px desde el script y en una
+     pantalla angosta los costados se saldrian del encuadre. */
+  .vitrina-pista { scale: .82; }
+  .vitrina-pieza { width: clamp(310px, 80vw, 390px); height: clamp(390px, 62vh, 560px); }
+  .vitrina-escena-rotulo, .vitrina-escena-numero { display: none; }
+  .vitrina-titulo { font-size: clamp(34px, 8vw, 50px); }
+}
+
+@media (max-width: 760px) and (max-height: 620px) {
+  .vitrina-pegada { padding-block: 9px; }
+  .vitrina-titulo { font-size: clamp(26px, 5vw, 34px); margin-top: 4px; }
+  .vitrina-rotulo { font-size: 8px; }
+  .vitrina-pieza { height: 36vh; }
+  .vitrina-accion { margin-top: 7px; }
+  .vitrina-indicador { margin-top: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Sin recorrido no hay fila que correr: queda el frasco destacado solo. */
+  .vitrina { height: auto !important; }
+  .vitrina-pegada { position: static; height: auto; min-height: 100vh; }
+  .vitrina-pieza[data-centrada="true"] button { animation: none; }
+  .vitrina-pieza { transition: none; }
+}
+
+/* Ficha inmersiva al elegir un frasco. */
+.perfume-spotlight { --spot-bg: radial-gradient(ellipse 72% 78% at 70% 48%, #302820 0%, #171411 52%, #0b0b0b 100%); --spot-text: #f5f1e7; --spot-muted: #c9c0b2; --spot-accent: #d4af37; --spot-line: rgb(212 175 55 / .25); --spot-glow: rgb(212 175 55 / .18); --spot-beam: rgb(235 192 102 / .12); --spot-shadow: rgb(0 0 0 / .55); position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; color: var(--spot-text); background: var(--spot-bg); animation: spotlight-entrar .5s cubic-bezier(.2,.8,.2,1) both; }
+.perfume-spotlight::backdrop { background: var(--background); }
+:root[data-theme="light"] .perfume-spotlight { --spot-bg: radial-gradient(ellipse 72% 78% at 70% 43%, #fffdf8 0%, #f6f0e5 56%, #eae0d1 100%); --spot-text: #2e2a24; --spot-muted: #6d6254; --spot-accent: #89671f; --spot-line: rgb(137 103 31 / .26); --spot-glow: rgb(190 142 57 / .18); --spot-beam: rgb(194 143 53 / .12); --spot-shadow: rgb(57 37 13 / .25); }
+.perfume-spotlight-contenido { display: flex; flex-direction: column; height: 100%; padding: clamp(22px, 3vw, 45px); overflow: hidden; }
+.perfume-spotlight-barra, .perfume-spotlight-pie { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 18px; font-size: 10px; letter-spacing: .24em; color: var(--spot-accent); }
+.perfume-spotlight-barra i { margin-inline: 10px; font-style: normal; }
+.perfume-spotlight-barra button { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--spot-line); border-radius: 50%; background: transparent; color: var(--spot-text); cursor: pointer; transition: background .2s, transform .2s; }
+.perfume-spotlight-barra button:hover { background: var(--spot-glow); transform: scale(1.08); }
+.perfume-spotlight-cuerpo { display: grid; grid-template-columns: minmax(280px, .82fr) minmax(0, 1.18fr); align-items: center; flex: 1; min-height: 0; }
+.perfume-spotlight-texto { position: relative; z-index: 1; max-width: 440px; animation: spotlight-texto .7s .12s both; }
+.perfume-spotlight-texto .eyebrow { color: var(--spot-accent); }
+.perfume-spotlight-numero { margin-top: 24px; font-size: 10px; letter-spacing: .25em; color: var(--spot-muted); }
+.perfume-spotlight-texto h2 { margin-top: 16px; font-family: var(--font-serif), Georgia, serif; font-size: clamp(44px, 6vw, 94px); line-height: .98; font-weight: 400; letter-spacing: -.045em; text-wrap: balance; }
+.perfume-spotlight-nota { margin-top: 25px; color: var(--spot-accent); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; }
+.perfume-spotlight-descripcion { max-width: 36ch; margin-top: 20px; color: var(--spot-muted); line-height: 1.7; font-size: clamp(14px, 1.2vw, 17px); }
+.perfume-spotlight-cta { display: inline-flex; align-items: center; gap: 36px; margin-top: 34px; padding: 14px 0; border-bottom: 1px solid var(--spot-accent); color: var(--spot-text); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+.perfume-spotlight-cta span { color: var(--spot-accent); font-size: 19px; }
+.perfume-spotlight-escena { position: relative; display: grid; place-items: center; height: min(76dvh, 850px); min-height: 320px; perspective: 1100px; }
+.perfume-spotlight-escena::before { content: ""; position: absolute; inset: -20% 8%; background: linear-gradient(112deg, transparent 28%, var(--spot-beam) 51%, transparent 72%); filter: blur(28px); transform: rotate(-12deg); pointer-events: none; }
+.perfume-spotlight-resplandor { position: absolute; width: 58%; height: 82%; border-radius: 50%; background: radial-gradient(ellipse, var(--spot-glow), transparent 72%); filter: blur(45px); transform: rotate(-18deg); animation: spotlight-luz 7s ease-in-out infinite alternate; }
+.perfume-spotlight-modelo { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; animation: spotlight-flotar 6s ease-in-out infinite alternate; }
+.perfume-spotlight-escena img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 40px 34px var(--spot-shadow)); animation: spotlight-frasco .7s cubic-bezier(.16,.8,.2,1) both; }
+.perfume-spotlight-piso { position: absolute; bottom: 7%; width: 42%; height: 16px; background: var(--spot-shadow); border-radius: 50%; filter: blur(19px); }
+.perfume-spotlight-vertical { position: absolute; z-index: 2; right: 1%; top: 50%; writing-mode: vertical-rl; font-size: 10px; letter-spacing: .3em; color: var(--spot-accent); opacity: .6; transform: translateY(-50%); }
+.perfume-spotlight-pie { border-top: 1px solid var(--spot-line); padding-top: 20px; }
+.perfume-spotlight-movimiento { display: flex; align-items: center; gap: 10px; }
+.perfume-spotlight-movimiento i { width: 6px; height: 6px; border-radius: 50%; background: var(--spot-accent); box-shadow: 0 0 12px var(--spot-accent); }
+@keyframes spotlight-entrar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spotlight-texto { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes spotlight-frasco { from { opacity: 0; transform: translateY(22px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes spotlight-flotar { from { transform: translateY(5px) rotateY(-4deg) rotateZ(-6deg) scale(1.01); } to { transform: translateY(-9px) rotateY(4deg) rotateZ(-3deg) scale(1.04); } }
+@keyframes spotlight-luz { from { opacity: .55; transform: translateX(-5%); } to { opacity: 1; transform: translateX(5%); } }
+@media (max-width: 760px) {
+  .perfume-spotlight-contenido { padding: 18px 22px 22px; }
+  .perfume-spotlight-cuerpo { display: flex; flex-direction: column-reverse; justify-content: center; }
+  .perfume-spotlight-escena { width: 100%; height: min(46vh, 440px); min-height: 230px; }
+  .perfume-spotlight-vertical { display: none; }
+  .perfume-spotlight-texto { align-self: stretch; }
+  .perfume-spotlight-numero { display: none; }
+  .perfume-spotlight-texto h2 { margin-top: 8px; font-size: clamp(36px, 9vw, 55px); }
+  .perfume-spotlight-nota { margin-top: 12px; }
+  .perfume-spotlight-descripcion { margin-top: 10px; font-size: 13px; }
+  .perfume-spotlight-cta { margin-top: 12px; }
+  .perfume-spotlight-pie { padding-top: 12px; }
+  .perfume-spotlight-pie > span { line-height: 1.4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .perfume-spotlight, .perfume-spotlight-texto, .perfume-spotlight-escena img, .perfume-spotlight-modelo, .perfume-spotlight-resplandor { animation: none; }
+}

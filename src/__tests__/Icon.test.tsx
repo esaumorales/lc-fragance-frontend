@@ -1,12 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { Icon } from "@/components/atoms/Icon";
 
-vi.mock("@iconify/react", () => ({
-  Icon: ({ icon, className }: { icon: string; className?: string }) => (
-    <span data-icon={icon} className={className} />
-  ),
-}));
+// El doble de @iconify/react vive en vitest.setup.tsx, para todas las pruebas.
 
 describe("Icon", () => {
   it("pasa el nombre del icono a @iconify/react", () => {

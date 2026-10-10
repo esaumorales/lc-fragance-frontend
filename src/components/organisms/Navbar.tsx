@@ -154,7 +154,7 @@ export function Navbar() {
         <nav
           className={cn(
             "site-nav mx-auto grid grid-cols-[1fr_auto_1fr] items-center px-5 transition-all duration-500 sm:px-8",
-            scrolled ? "py-3" : "py-6"
+            "py-6"
           )}
         >
           <div className="flex items-center gap-9">
@@ -176,7 +176,7 @@ export function Navbar() {
           </div>
 
           <Link href="/" onClick={() => setMenuOpen(false)} className="justify-self-center">
-            <Logo compact={scrolled} />
+            <Logo />
           </Link>
 
           <div className="flex items-center justify-end gap-5 sm:gap-6">
