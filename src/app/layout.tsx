@@ -24,8 +24,11 @@ const cormorant = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "LC Fragance | El arte de distinguirte",
+  title: "LC Fragance",
   description: "Perfumes y tecnología importados, seleccionados uno por uno.",
+  icons: {
+    icon: "/brand/emblem.webp",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -45,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             correr una vez sobre el HTML del servidor, antes de hidratar.
             next/script con beforeInteractive da exactamente el mismo aviso. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
