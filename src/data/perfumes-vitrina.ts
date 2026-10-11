@@ -8,7 +8,7 @@
 export type PerfumeDeVitrina = {
   /** Vista frontal, ruta dentro de public/. */
   imagen: string;
-  /** Quince ángulos ordenados, de derecha a izquierda; el centro es frontal. */
+  /** Treinta y un ángulos ordenados, de derecha a izquierda; el centro es frontal. */
   vistas: readonly string[];
   nombre: string;
   /** Las notas, en dos o tres palabras: va debajo del nombre. */
@@ -22,19 +22,35 @@ function secuencia(base: string): readonly string[] {
   const ruta = `/hero/perfumes/${base}`;
   return [
     `${ruta}-right.webp`,
+    `${ruta}-right22.webp`,
     `${ruta}-right20.webp`,
+    `${ruta}-right18.webp`,
     `${ruta}-right16.webp`,
+    `${ruta}-right14.webp`,
     `${ruta}-right12.webp`,
     `${ruta}-right10.webp`,
     `${ruta}-right08.webp`,
+    `${ruta}-right06.webp`,
+    `${ruta}-right05.webp`,
     `${ruta}-right04.webp`,
+    `${ruta}-right03.webp`,
+    `${ruta}-right02.webp`,
+    `${ruta}-right01.webp`,
     `${ruta}.webp`,
+    `${ruta}-left01.webp`,
+    `${ruta}-left02.webp`,
+    `${ruta}-left03.webp`,
     `${ruta}-left04.webp`,
+    `${ruta}-left05.webp`,
+    `${ruta}-left06.webp`,
     `${ruta}-left08.webp`,
     `${ruta}-left10.webp`,
     `${ruta}-left12.webp`,
+    `${ruta}-left14.webp`,
     `${ruta}-left16.webp`,
+    `${ruta}-left18.webp`,
     `${ruta}-left20.webp`,
+    `${ruta}-left22.webp`,
     `${ruta}-left.webp`,
   ];
 }

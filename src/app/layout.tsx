@@ -48,6 +48,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             correr una vez sobre el HTML del servidor, antes de hidratar.
             next/script con beforeInteractive da exactamente el mismo aviso. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* En una recarga del inicio, el navegador no debe restaurar el scroll
+            después de que la vitrina ya se dibujó en su posición inicial. */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if (location.pathname === "/" && performance.getEntriesByType("navigation")[0]?.type === "reload") {
+            history.scrollRestoration = "manual";
+            scrollTo(0, 0);
+            addEventListener("pageshow", () => scrollTo(0, 0), { once: true });
+          }
+        ` }} />
 
       </head>
       <body className="min-h-full flex flex-col">

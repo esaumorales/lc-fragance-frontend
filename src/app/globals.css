@@ -449,11 +449,11 @@ body { line-height: 1.6; }
 .vitrina-pista { position: relative; isolation: isolate; transform-style: preserve-3d; min-height: 0; height: 100%; }
 .vitrina-pista::before { content: ""; position: absolute; left: 50%; top: 78%; width: min(83vw, 1080px); height: 90px; transform: translate(-50%, -50%); background: radial-gradient(ellipse, rgb(212 175 55 / .25), rgb(212 175 55 / .06) 46%, transparent 72%); filter: blur(18px); pointer-events: none; }
 .vitrina-pista::after { content: ""; position: absolute; left: 50%; top: 83%; width: min(94vw, 1220px); height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgb(212 175 55 / .22) 25%, rgb(212 175 55 / .58) 50%, rgb(212 175 55 / .22) 75%, transparent); pointer-events: none; }
-.vitrina-pieza { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: clamp(240px, 29vw, 400px); height: clamp(290px, 48vh, 530px); transform-style: preserve-3d; will-change: transform, opacity; transition: transform .18s ease-out, opacity .18s ease-out; }
+.vitrina-pieza { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: clamp(240px, 29vw, 400px); height: clamp(290px, 48vh, 530px); transform-style: preserve-3d; will-change: transform, opacity; }
 .vitrina-pieza img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
-.vitrina-vista { transition: opacity .12s linear; }
+.vitrina-vista { transition: none; }
 .vitrina-pieza button { position: relative; display: block; width: 100%; height: 100%; border: 0; background: none; padding: 0; cursor: pointer; border-radius: 4px; filter: drop-shadow(0 26px 30px rgb(0 0 0 / .48)); }
-.vitrina-pieza[data-centrada="true"] button { filter: drop-shadow(0 34px 34px rgb(0 0 0 / .6)) drop-shadow(0 0 24px rgb(212 175 55 / .19)); animation: vitrina-flotar 4.5s ease-in-out infinite alternate; }
+.vitrina-pieza[data-centrada="true"] button { filter: drop-shadow(0 34px 34px rgb(0 0 0 / .6)) drop-shadow(0 0 24px rgb(212 175 55 / .19)); }
 .vitrina-pieza button:focus-visible { outline: 1px solid var(--primary); outline-offset: 10px; }
 @keyframes vitrina-flotar { from { transform: translateY(2px); } to { transform: translateY(-7px); } }
 
@@ -488,6 +488,8 @@ body { line-height: 1.6; }
      pantalla angosta los costados se saldrian del encuadre. */
   .vitrina-pista { scale: .82; }
   .vitrina-pieza { width: clamp(310px, 80vw, 390px); height: clamp(390px, 62vh, 560px); }
+  .vitrina-pieza { transition: none; }
+  .vitrina-pieza[data-centrada="true"] button { animation: none; }
   .vitrina-escena-rotulo, .vitrina-escena-numero { display: none; }
   .vitrina-titulo { font-size: clamp(34px, 8vw, 50px); }
 }
@@ -513,7 +515,11 @@ body { line-height: 1.6; }
 /* Ficha inmersiva al elegir un frasco. */
 .perfume-spotlight { --spot-bg: radial-gradient(ellipse 72% 78% at 70% 48%, #302820 0%, #171411 52%, #0b0b0b 100%); --spot-text: #f5f1e7; --spot-muted: #c9c0b2; --spot-accent: #d4af37; --spot-line: rgb(212 175 55 / .25); --spot-glow: rgb(212 175 55 / .18); --spot-beam: rgb(235 192 102 / .12); --spot-shadow: rgb(0 0 0 / .55); position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; color: var(--spot-text); background: var(--spot-bg); animation: spotlight-entrar .5s cubic-bezier(.2,.8,.2,1) both; }
 .perfume-spotlight::backdrop { background: var(--background); }
-:root[data-theme="light"] .perfume-spotlight { --spot-bg: radial-gradient(ellipse 72% 78% at 70% 43%, #fffdf8 0%, #f6f0e5 56%, #eae0d1 100%); --spot-text: #2e2a24; --spot-muted: #6d6254; --spot-accent: #89671f; --spot-line: rgb(137 103 31 / .26); --spot-glow: rgb(190 142 57 / .18); --spot-beam: rgb(194 143 53 / .12); --spot-shadow: rgb(57 37 13 / .25); }
+:root[data-theme="light"] .perfume-spotlight { --spot-bg: radial-gradient(ellipse 55% 70% at 75% 44%, #fffdfa 0%, #f7f0e4 62%, transparent 100%), linear-gradient(112deg, #e7dac5 0%, #f1e8d9 34%, #f8f4ed 72%, #f1e7d7 100%); --spot-text: #27221c; --spot-muted: #53483b; --spot-accent: #735018; --spot-line: rgb(115 80 24 / .43); --spot-glow: rgb(190 142 57 / .28); --spot-beam: rgb(194 143 53 / .19); --spot-shadow: rgb(57 37 13 / .29); }
+:root[data-theme="light"] .perfume-spotlight-texto .eyebrow { display: inline-block; padding: 8px 12px 8px 15px; border-left: 2px solid var(--spot-accent); background: rgb(115 80 24 / .075); }
+:root[data-theme="light"] .perfume-spotlight-nota { font-weight: 600; }
+:root[data-theme="light"] .perfume-spotlight-cta { border-bottom-width: 2px; font-weight: 600; }
+:root[data-theme="light"] .perfume-spotlight-vertical { opacity: .9; }
 .perfume-spotlight-contenido { display: flex; flex-direction: column; height: 100%; padding: clamp(22px, 3vw, 45px); overflow: hidden; }
 .perfume-spotlight-barra, .perfume-spotlight-pie { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 18px; font-size: 10px; letter-spacing: .24em; color: var(--spot-accent); }
 .perfume-spotlight-barra i { margin-inline: 10px; font-style: normal; }

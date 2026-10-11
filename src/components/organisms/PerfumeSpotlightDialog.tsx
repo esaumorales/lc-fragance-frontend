@@ -46,7 +46,7 @@ export function PerfumeSpotlightDialog({ perfume, onClose }: Props) {
               <h2>{perfume.nombre}</h2>
               <p className="perfume-spotlight-nota">{perfume.nota}</p>
               <p className="perfume-spotlight-descripcion">{perfume.detalle}</p>
-              <Link href={perfume.href} onClick={onClose} className="perfume-spotlight-cta">
+              <Link href={perfume.href} className="perfume-spotlight-cta">
                 Explorar perfumes <span aria-hidden="true">↗</span>
               </Link>
             </div>

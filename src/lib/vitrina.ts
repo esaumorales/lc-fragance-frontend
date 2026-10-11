@@ -55,11 +55,17 @@ export const ARCO: FormaDelArco = { paso: 0.58, radio: 610, alcance: 2.8 };
  */
 export const PERSPECTIVA = Math.round(ARCO.radio * 1.45);
 
+const ANGULOS_VITRINA = [-25, -22, -20, -18, -16, -14, -12, -10, -8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 25] as const;
+
 /** Fotograma más cercano al ángulo actual; evita superponer dos siluetas. */
 export function fotogramaParaDistancia(distancia: number): number {
-  // Quince fotos: pasos de 4° y 10° cerca del frente, luego 12/16/20/25°.
-  const posicion = Math.min(14, Math.max(0, 7 + distancia * 7));
-  return Math.round(posicion);
+  // Pasos de 1° cerca del frente y 2–3° hacia los extremos.
+  const angulo = Math.max(-25, Math.min(25, distancia * 25));
+  let cercano = 0;
+  for (let indice = 1; indice < ANGULOS_VITRINA.length; indice++) {
+    if (Math.abs(ANGULOS_VITRINA[indice]! - angulo) < Math.abs(ANGULOS_VITRINA[cercano]! - angulo)) cercano = indice;
+  }
+  return cercano;
 }
 
 /**

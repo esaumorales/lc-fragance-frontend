@@ -26,20 +26,58 @@ function transformar(distancia: number) {
   return `translate3d(${x}px, ${Math.abs(distancia) * 18 - enfoque * 45}px, ${z}px) rotateY(${giro}deg) scale(${escala})`;
 }
 
-function pesoDeVista(indice: number, distancia: number): number {
-  return indice === fotogramaParaDistancia(distancia) ? 1 : 0;
-}
-
 export function HeroVitrina() {
   const seccion = useRef<HTMLElement>(null);
   const piezas = useRef<(HTMLElement | null)[]>([]);
-  const decodificaciones = useRef(new WeakMap<HTMLImageElement, Promise<void>>());
+  const precargas = useRef(new Map<string, HTMLImageElement>());
+  const entradaDetalle = useRef(false);
   const pendiente = useRef(false);
   const [centrada, setCentrada] = useState(INICIAL);
   const [seleccionado, setSeleccionado] = useState<PerfumeDeVitrina | null>(null);
 
   const cantidad = PERFUMES_VITRINA.length;
   const alto = 100 + cantidad * PANTALLAS_POR_PIEZA * 100;
+
+  const moverVista = useCallback(function mostrarAnguloActual(pieza: HTMLElement, indice: number) {
+    const actual = Number(pieza.dataset.fotogramaActual);
+    const deseado = Number(pieza.dataset.fotogramaDeseado);
+    if (actual === deseado || pieza.dataset.fotogramaSolicitado) return;
+
+    // Ir directo al ángulo del scroll: recorrer todos los intermedios deja
+    // los frascos girando después de que la persona se detiene.
+    const fotograma = deseado;
+    const ruta = PERFUMES_VITRINA[indice]?.vistas[fotograma];
+    const vistas = pieza.querySelectorAll<HTMLImageElement>(".vitrina-vista");
+    const activa = Number(pieza.dataset.vistaActiva ?? "0");
+    const anterior = vistas[activa];
+    const siguiente = vistas[1 - activa];
+    if (!ruta || !anterior || !siguiente) return;
+
+    pieza.dataset.fotogramaSolicitado = String(fotograma);
+    siguiente.src = ruta;
+    void siguiente.decode().then(() => {
+      if (!pieza.isConnected) return;
+      pieza.dataset.fotogramaSolicitado = "";
+      // Si cambió el scroll durante la descarga, saltar al destino nuevo.
+      const nuevoDestino = Number(pieza.dataset.fotogramaDeseado);
+      if (nuevoDestino !== fotograma) {
+        mostrarAnguloActual(pieza, indice);
+        return;
+      }
+      // El anterior sigue visible hasta que la nueva imagen está decodificada.
+      siguiente.style.opacity = "1";
+      siguiente.alt = anterior.alt;
+      siguiente.removeAttribute("aria-hidden");
+      anterior.alt = "";
+      anterior.setAttribute("aria-hidden", "true");
+      pieza.dataset.vistaActiva = String(1 - activa);
+      pieza.dataset.fotogramaActual = String(fotograma);
+      anterior.style.opacity = "0";
+    }).catch(() => {
+      if (pieza.dataset.fotogramaSolicitado === String(fotograma)) pieza.dataset.fotogramaSolicitado = "";
+      if (pieza.dataset.fotogramaDeseado !== String(fotograma)) mostrarAnguloActual(pieza, indice);
+    });
+  }, []);
 
   // Colocar cada frasco a mano y no con una clase por estado: los valores son
   // continuos, no hay un numero finito de posiciones que nombrar.
@@ -50,45 +88,33 @@ export function HeroVitrina() {
       // lados del protagonista, como en una vitrina física.
       const distancia = distanciaEnRueda(indice, posicion, cantidad);
       const { opacidad, alcanzable } = colocar(distancia);
-      const vistas = pieza.querySelectorAll<HTMLImageElement>(".vitrina-vista");
-
       pieza.style.transform = transformar(distancia);
       pieza.style.opacity = String(opacidad);
       pieza.style.zIndex = String(capa(distancia));
       const fotograma = fotogramaParaDistancia(distancia);
       pieza.dataset.fotogramaDeseado = String(fotograma);
-      if (pieza.dataset.fotogramaActual !== String(fotograma) && pieza.dataset.fotogramaSolicitado !== String(fotograma)) {
-        const siguiente = vistas[fotograma];
-        if (siguiente) {
-          pieza.dataset.fotogramaSolicitado = String(fotograma);
-          let lista = decodificaciones.current.get(siguiente);
-          if (!lista) {
-            lista = siguiente.decode();
-            decodificaciones.current.set(siguiente, lista);
-          }
-          void lista.then(() => {
-            if (!pieza.isConnected || pieza.dataset.fotogramaDeseado !== String(fotograma)) {
-              if (pieza.dataset.fotogramaSolicitado === String(fotograma)) pieza.dataset.fotogramaSolicitado = "";
-              return;
-            }
-            const anterior = vistas[Number(pieza.dataset.fotogramaActual)];
-            siguiente.style.opacity = "1";
-            if (anterior && anterior !== siguiente) anterior.style.opacity = "0";
-            pieza.dataset.fotogramaActual = String(fotograma);
-            pieza.dataset.fotogramaSolicitado = "";
-          }).catch(() => {
-            decodificaciones.current.delete(siguiente);
-            if (pieza.dataset.fotogramaSolicitado === String(fotograma)) pieza.dataset.fotogramaSolicitado = "";
-          });
+      // Tener los vecinos inmediatos en caché evita esperar a la red justo
+      // cuando el dedo cruza un ángulo. Se limita para no saturar el móvil.
+      if (Math.abs(distancia) < 1.5) {
+        for (const vecino of [fotograma - 1, fotograma + 1]) {
+          const rutaVecina = PERFUMES_VITRINA[indice]?.vistas[vecino];
+          if (!rutaVecina || precargas.current.has(rutaVecina)) continue;
+          const imagen = new Image();
+          imagen.decoding = "async";
+          imagen.src = rutaVecina;
+          precargas.current.set(rutaVecina, imagen);
+          if (precargas.current.size > 12) precargas.current.delete(precargas.current.keys().next().value!);
+          void imagen.decode().catch(() => precargas.current.delete(rutaVecina));
         }
       }
+      moverVista(pieza, indice);
       // Transparente pero no oculto: con visibility o display, los frascos de
       // los extremos se caen del arbol de accesibilidad y el lector de
       // pantalla deja de nombrar media coleccion.
       pieza.style.pointerEvents = alcanzable ? "auto" : "none";
       pieza.dataset.centrada = Math.abs(distancia) < 0.5 ? "true" : "false";
     });
-  }, [cantidad]);
+  }, [cantidad, moverVista]);
 
   // La cabecera del sitio es pegada y su alto cambia con el ancho: la vitrina
   // tiene que empezar debajo, o el titulo queda tapado al scrollear.
@@ -107,6 +133,14 @@ export function HeroVitrina() {
     acomodar(avance(progreso, cantidad));
     setCentrada(piezaCentrada(progreso, cantidad));
   }, [acomodar, cantidad]);
+
+  useEffect(() => {
+    const navegacion = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    if (navegacion?.type !== "reload") return;
+    history.scrollRestoration = "manual";
+    window.scrollTo({ top: 0, behavior: "auto" });
+    return () => { history.scrollRestoration = "auto"; };
+  }, []);
 
   useEffect(() => {
     // Antes de que llegue el primer scroll la fila tiene que estar puesta.
@@ -136,6 +170,28 @@ export function HeroVitrina() {
       window.removeEventListener("resize", alRedimensionar);
     };
   }, [acomodar, avanzar, medirCabecera]);
+
+  useEffect(() => {
+    if (!seleccionado) return;
+    window.history.pushState({ vitrinaDetalle: true }, "", window.location.href);
+    entradaDetalle.current = true;
+    const volver = () => {
+      entradaDetalle.current = false;
+      setSeleccionado(null);
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
+    };
+    window.addEventListener("popstate", volver);
+    return () => window.removeEventListener("popstate", volver);
+  }, [seleccionado]);
+
+  const cerrarDetalle = useCallback(() => {
+    if (entradaDetalle.current) {
+      window.history.back();
+      return;
+    }
+    setSeleccionado(null);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
 
   // Con el teclado se recorre la fila con el tabulador: el frasco enfocado
   // tiene que venir al frente, si no se navega a ciegas.
@@ -184,6 +240,7 @@ export function HeroVitrina() {
                 }}
                 className="vitrina-pieza"
                 data-fotograma-actual={fotogramaParaDistancia(distancia)}
+                data-vista-activa="0"
                 data-centrada={Math.abs(distancia) < 0.5 ? "true" : "false"}
                 style={{
                   transform: transformar(distancia),
@@ -193,22 +250,11 @@ export function HeroVitrina() {
                 }}
               >
                 <button type="button" onClick={() => setSeleccionado(perfume)} onFocus={() => alEnfocar(indice)} aria-label={`Descubrir ${perfume.nombre}`}>
-                  {perfume.vistas.map((ruta, indiceVista) => (
-                    // Solo la fotografía frontal aporta texto alternativo; las
-                    // otras catorce son fotogramas decorativos de la misma pieza.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={ruta}
-                      className="vitrina-vista"
-                      src={ruta}
-                      alt={indiceVista === 7 ? `${perfume.nombre}, ${perfume.nota}` : ""}
-                      aria-hidden={indiceVista === 7 ? undefined : true}
-                      style={{ opacity: pesoDeVista(indiceVista, distancia) }}
-                      fetchPriority={indiceVista === 7 ? (indice === INICIAL ? "high" : "auto") : "low"}
-                      decoding="async"
-                      draggable={false}
-                    />
-                  ))}
+                  {/* Dos capas alternan ángulos decodificados sin vaciar la vitrina. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="vitrina-vista" src={perfume.vistas[fotogramaParaDistancia(distancia)]} alt={`${perfume.nombre}, ${perfume.nota}`} style={{ opacity: 1 }} fetchPriority={indice === INICIAL ? "high" : "auto"} decoding="async" draggable={false} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="vitrina-vista" alt="" aria-hidden="true" style={{ opacity: 0 }} decoding="async" draggable={false} />
                 </button>
               </article>
               );
@@ -251,7 +297,7 @@ export function HeroVitrina() {
           LC FRAGANCE <i>—</i> TU ESENCIA, TU SELLO
         </span>
       </div>
-      <PerfumeSpotlightDialog key={seleccionado?.imagen ?? "cerrado"} perfume={seleccionado} onClose={() => setSeleccionado(null)} />
+      <PerfumeSpotlightDialog key={seleccionado?.imagen ?? "cerrado"} perfume={seleccionado} onClose={cerrarDetalle} />
     </>
   );
 }
