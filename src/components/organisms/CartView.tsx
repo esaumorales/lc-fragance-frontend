@@ -113,20 +113,27 @@ export function CartView() {
           <Icon icon="mdi:check-circle" className="text-primary" />
           Pedido #{result.order.id.slice(0, 8)} registrado — total {precio(result.order.total)}
         </p>
-        {/* Tres pasos y en orden, porque es lo que la persona tiene que hacer
-            ahora. Ya no se pide comprobante: el pago lo aprueba el admin. */}
+        {/* El WhatsApp va primero: es lo que de verdad tiene que hacer ahora,
+            y el mensaje ya sale escrito. Ya no se pide comprobante. */}
         <ol className="flex flex-col gap-3 text-sm text-muted-foreground">
           <li className="flex gap-3">
             <span className="paso-del-pedido">1</span>
-            <span>
-              Yapeá <span className="text-foreground">{precio(result.order.total)}</span> a{" "}
-              <span className="text-foreground">{result.yape.name}</span>, al{" "}
-              <span className="text-foreground">{result.yape.phone}</span>.
-            </span>
+            <span>Tocá el botón: te abre el chat con el pedido ya escrito.</span>
           </li>
           <li className="flex gap-3">
             <span className="paso-del-pedido">2</span>
-            <span>Avisanos por WhatsApp con el botón de acá abajo.</span>
+            <span>
+              Yapeá <span className="text-foreground">{precio(result.order.total)}</span> a{" "}
+              <span className="text-foreground">{result.yape.name}</span>
+              {/* El numero puede no estar configurado; sin esto quedaba un
+                  "al ." colgando en la pantalla. */}
+              {result.yape.phone ? (
+                <>
+                  , al <span className="text-foreground">{result.yape.phone}</span>
+                </>
+              ) : null}
+              .
+            </span>
           </li>
           <li className="flex gap-3">
             <span className="paso-del-pedido">3</span>
@@ -148,7 +155,7 @@ export function CartView() {
           >
             <Button variant="primary" className="gap-2">
               <Icon icon="mdi:whatsapp" />
-              Confirmar por WhatsApp
+              Lo quiero: escribir por WhatsApp
             </Button>
           </a>
         ) : null}
