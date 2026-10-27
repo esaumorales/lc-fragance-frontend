@@ -17,6 +17,9 @@ const vacio = {
   slug: "",
   description: "",
   price: "",
+  offerPrice: "",
+  offerStartsAt: "",
+  offerEndsAt: "",
   sku: "",
   stock: "0",
   categoryId: "",
@@ -25,6 +28,10 @@ const vacio = {
   marca: "",
 };
 
+function soloFecha(iso: string | null | undefined) {
+  return iso ? iso.slice(0, 10) : "";
+}
+
 function desdeProducto(producto: Product) {
   const atributos = producto.attributes as { notasOlfativas?: unknown; marca?: unknown };
   return {
@@ -32,6 +39,10 @@ function desdeProducto(producto: Product) {
     slug: producto.slug,
     description: producto.description,
     price: String(producto.price),
+    offerPrice: producto.offerPrice ? String(producto.offerPrice) : "",
+    // El <input type="date"> quiere aaaa-mm-dd; la API manda ISO completo.
+    offerStartsAt: soloFecha(producto.offerStartsAt),
+    offerEndsAt: soloFecha(producto.offerEndsAt),
     sku: producto.sku,
     stock: String(producto.stock),
     categoryId: producto.categoryId,
@@ -104,6 +115,11 @@ export function ProductFormDialog({ producto, categories, onCerrar, onGuardado }
       slug: form.slug || slugify(form.name),
       description: form.description,
       price: Number(form.price),
+      // Vacio viaja como null y no como ausente: al editar, borrar el campo
+      // tiene que sacar la oferta, no dejar la anterior puesta.
+      offerPrice: form.offerPrice ? Number(form.offerPrice) : null,
+      offerStartsAt: form.offerPrice && form.offerStartsAt ? form.offerStartsAt : null,
+      offerEndsAt: form.offerPrice && form.offerEndsAt ? form.offerEndsAt : null,
       sku: form.sku,
       categoryId: form.categoryId,
       images: form.imageUrl ? [form.imageUrl] : [],
@@ -281,6 +297,37 @@ export function ProductFormDialog({ producto, categories, onCerrar, onGuardado }
             onChange={(e) => setForm({ ...form, price: e.target.value })}
             required
           />
+          <fieldset className="col-span-full grid gap-3 border border-hairline p-4 sm:grid-cols-3">
+            <legend className="px-2 text-[10px] uppercase tracking-widest text-primary">
+              Oferta (opcional)
+            </legend>
+            <Input
+              type="number" step="0.01" min="0.01"
+              placeholder="Precio de oferta" aria-label="Precio de oferta"
+              value={form.offerPrice}
+              onChange={(e) => setForm({ ...form, offerPrice: e.target.value })}
+            />
+            <Input
+              type="date"
+              aria-label="La oferta empieza"
+              value={form.offerStartsAt}
+              onChange={(e) => setForm({ ...form, offerStartsAt: e.target.value })}
+              disabled={!form.offerPrice}
+            />
+            <Input
+              type="date"
+              aria-label="La oferta termina"
+              value={form.offerEndsAt}
+              onChange={(e) => setForm({ ...form, offerEndsAt: e.target.value })}
+              disabled={!form.offerPrice}
+            />
+            <p className="col-span-full text-xs text-muted-foreground">
+              {form.offerPrice
+                ? "Sin fechas, la oferta rige hasta que la saques. Con fechas, arranca y termina sola."
+                : "Poné un precio de oferta para habilitar las fechas. Vaciarlo saca la oferta."}
+            </p>
+          </fieldset>
+
           {/* Al editar no aparece: el stock se ajusta desde la lista. */}
           {producto ? null : (
             <Input

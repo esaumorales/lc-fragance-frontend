@@ -12,6 +12,15 @@ vi.mock("@iconify/react", () => ({
   ),
 }));
 
+// jsdom no implementa HTMLImageElement.decode, que es lo que usa la vitrina
+// para tener el fotograma listo antes de mostrarlo. Sin este doble, cualquier
+// componente que precargue imágenes revienta al montar.
+Object.defineProperty(window.Image.prototype, "decode", {
+  configurable: true,
+  writable: true,
+  value: () => Promise.resolve(),
+});
+
 afterEach(() => {
   cleanup();
 });

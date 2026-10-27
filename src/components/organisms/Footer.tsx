@@ -2,8 +2,9 @@ import Link from "next/link";
 import { Logo } from "@/components/atoms/Logo";
 import { Icon } from "@/components/atoms/Icon";
 import { FooterCuenta } from "@/components/organisms/FooterCuenta";
+import type { EnlaceDeCategoria } from "@/lib/menu-categorias";
 
-export function Footer() {
+export function Footer({ enlaces }: { enlaces: EnlaceDeCategoria[] }) {
   return (
     <footer className="site-footer">
       <div className="footer-grid mx-auto grid gap-10">
@@ -17,12 +18,15 @@ export function Footer() {
 
         <div className="flex flex-col gap-3">
           <p className="text-xs uppercase tracking-[0.2em] text-primary">Tienda</p>
-          <Link href="/perfumes" className="text-sm text-muted-foreground hover:text-foreground">
-            Perfumes
-          </Link>
-          <Link href="/tecnologia" className="text-sm text-muted-foreground hover:text-foreground">
-            Tecnología
-          </Link>
+          {enlaces.map((enlace) => (
+            <Link
+              key={enlace.href}
+              href={enlace.href}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              {enlace.label}
+            </Link>
+          ))}
           <Link href="/carrito" className="text-sm text-muted-foreground hover:text-foreground">
             Carrito
           </Link>

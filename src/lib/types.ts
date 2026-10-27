@@ -3,6 +3,8 @@ export type Category = {
   name: string;
   slug: string;
   parentId: string | null;
+  /** Productos en la categoria y en sus subcategorias. */
+  productCount: number;
 };
 
 export type Product = {
@@ -11,6 +13,10 @@ export type Product = {
   slug: string;
   description: string;
   price: string;
+  /** Oferta: precio rebajado y desde cuando hasta cuando rige. */
+  offerPrice?: string | null;
+  offerStartsAt?: string | null;
+  offerEndsAt?: string | null;
   sku: string;
   stock: number;
   images: string[];

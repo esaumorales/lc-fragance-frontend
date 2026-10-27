@@ -9,11 +9,7 @@ import { cn } from "@/lib/cn";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { puedeEntrarAlPanel } from "@/lib/roles";
-
-const navLinks = [
-  { href: "/perfumes", label: "Perfumes" },
-  { href: "/tecnologia", label: "Tecnología" },
-];
+import type { EnlaceDeCategoria } from "@/lib/menu-categorias";
 
 /**
  * El scroll es estado externo. Con useEffect habria que invocar el handler una
@@ -126,7 +122,7 @@ function AccountMenu() {
  * izquierda, todo en una fila con marcos— se leía como panel de aplicación,
  * no como tienda.
  */
-export function Navbar() {
+export function Navbar({ enlaces }: { enlaces: EnlaceDeCategoria[] }) {
   const { user, logout, loading } = useAuth();
   const { itemCount } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -169,7 +165,7 @@ export function Navbar() {
             </button>
 
             <div className="hidden items-center gap-9 md:flex">
-              {navLinks.map((link) => (
+              {enlaces.map((link) => (
                 <NavLink key={link.href} {...link} />
               ))}
             </div>
@@ -216,7 +212,7 @@ export function Navbar() {
       {menuOpen ? (
         <div className="fixed inset-x-0 bottom-0 top-[7.5rem] z-40 bg-background md:hidden">
           <div className="flex flex-col px-8 pt-8">
-            {navLinks.map((link, index) => (
+            {enlaces.map((link, index) => (
               <Link
                 key={link.href}
                 href={link.href}

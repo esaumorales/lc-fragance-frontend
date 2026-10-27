@@ -83,3 +83,25 @@ describe("CartItemRow", () => {
     expect(screen.getByLabelText("Aumentar cantidad")).toBeDisabled();
   });
 });
+
+describe("CartItemRow con oferta", () => {
+  // Si el renglón sumara el precio de lista, la oferta se vería en la vitrina
+  // pero el carrito cobraría caro.
+  it("cobra el precio de oferta y tacha el de lista", () => {
+    render(
+      <CartItemRow
+        item={{
+          ...item,
+          quantity: 2,
+          product: { ...item.product, price: "100.00", offerPrice: "60.00" },
+        }}
+        onQuantityChange={vi.fn()}
+        onRemove={vi.fn()}
+        disabled={false}
+      />
+    );
+
+    expect(screen.getByText(/120[.,]00/)).toBeInTheDocument();
+    expect(screen.queryByText(/200[.,]00/)).not.toBeInTheDocument();
+  });
+});

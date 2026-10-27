@@ -28,10 +28,17 @@ async function abrirMenuDeUsuario() {
   return false;
 }
 
+// El menú ya no trae las secciones puestas: se las da el layout con las
+// categorías que tienen productos.
+const ENLACES = [
+  { href: "/perfumes", label: "Perfumes" },
+  { href: "/tecnologia", label: "Tecnología" },
+];
+
 describe("Navbar: acceso al panel", () => {
   it("se lo ofrece a un administrador", async () => {
     conRol("ADMIN");
-    render(<Navbar />);
+    render(<Navbar enlaces={ENLACES} />);
     expect(await abrirMenuDeUsuario()).toBe(true);
   });
 
@@ -39,13 +46,13 @@ describe("Navbar: acceso al panel", () => {
   // dueño sin ninguna forma de entrar a su propio panel.
   it("se lo ofrece también al superadministrador", async () => {
     conRol("SUPERADMIN");
-    render(<Navbar />);
+    render(<Navbar enlaces={ENLACES} />);
     expect(await abrirMenuDeUsuario()).toBe(true);
   });
 
   it("no se lo ofrece a un cliente", async () => {
     conRol("CUSTOMER");
-    render(<Navbar />);
+    render(<Navbar enlaces={ENLACES} />);
     expect(await abrirMenuDeUsuario()).toBe(false);
   });
 });

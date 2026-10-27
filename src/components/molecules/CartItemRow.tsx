@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { CartItem } from "@/lib/types";
 import { Icon } from "@/components/atoms/Icon";
 import { precio } from "@/lib/precio";
+import { oferta } from "@/lib/oferta";
 
 type CartItemRowProps = {
   item: CartItem;
@@ -14,7 +15,10 @@ type CartItemRowProps = {
 
 export function CartItemRow({ item, onQuantityChange, onRemove, disabled }: CartItemRowProps) {
   const image = item.product.images[0];
-  const subtotal = (Number(item.product.price) * item.quantity).toFixed(2);
+  // Con el precio de lista, una oferta se mostraria en la vitrina pero el
+  // carrito seguiria sumando caro.
+  const vigente = oferta(item.product);
+  const subtotal = (Number(vigente.precio) * item.quantity).toFixed(2);
 
   return (
     <div className="flex items-center gap-4 border-b border-border py-4">
@@ -30,7 +34,14 @@ export function CartItemRow({ item, onQuantityChange, onRemove, disabled }: Cart
 
       <div className="flex-1">
         <p className="text-sm font-medium text-foreground">{item.product.name}</p>
-        <p className="text-sm text-muted-foreground">{precio(item.product.price)}</p>
+        <p className="flex items-baseline gap-2 text-sm text-muted-foreground">
+          {vigente.precioTachado ? (
+            <span className="text-xs line-through">{precio(vigente.precioTachado)}</span>
+          ) : null}
+          <span className={vigente.enOferta ? "text-primary" : undefined}>
+            {precio(vigente.precio)}
+          </span>
+        </p>
       </div>
 
       <div className="flex items-center gap-2">

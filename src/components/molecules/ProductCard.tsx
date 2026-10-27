@@ -5,6 +5,7 @@ import { Icon } from "@/components/atoms/Icon";
 
 import { AddToCartButton } from "@/components/molecules/AddToCartButton";
 import { precio } from "@/lib/precio";
+import { oferta } from "@/lib/oferta";
 
 // Detalle editorial breve tomado de attributes (agnostico de rubro): notas
 // para perfumes, marca para tecnologia, o nada si el producto no trae esos
@@ -30,6 +31,7 @@ function getEyebrow(product: Product): string | null {
 export function ProductCard({ product }: { product: Product }) {
   const image = product.images[0];
   const eyebrow = getEyebrow(product);
+  const precioDelProducto = oferta(product);
 
   return (
     <article className="product-card group flex flex-col">
@@ -83,7 +85,16 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
 
         <div className="mt-2 flex items-baseline justify-between gap-3">
-          <p className="text-sm tracking-wide text-foreground">{precio(product.price)}</p>
+          <p className="flex items-baseline gap-2 text-sm tracking-wide text-foreground">
+            {precioDelProducto.precioTachado ? (
+              <span className="text-xs text-muted-foreground line-through">
+                {precio(precioDelProducto.precioTachado)}
+              </span>
+            ) : null}
+            <span className={precioDelProducto.enOferta ? "text-primary" : undefined}>
+              {precio(precioDelProducto.precio)}
+            </span>
+          </p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             {product.stock > 0 ? `${product.stock} disp.` : "Sin stock"}
           </p>

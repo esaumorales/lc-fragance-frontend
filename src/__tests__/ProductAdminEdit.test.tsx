@@ -39,7 +39,7 @@ beforeAll(() => {
   };
 });
 
-const categoria: Category = { id: "cat-1", name: "Perfumes", slug: "perfumes", parentId: null };
+const categoria: Category = { id: "cat-1", name: "Perfumes", slug: "perfumes", parentId: null, productCount: 1 };
 
 const producto = {
   id: "prod-1",

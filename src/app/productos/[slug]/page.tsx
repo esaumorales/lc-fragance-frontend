@@ -6,6 +6,7 @@ import { ProductVisual } from "@/components/organisms/ProductVisual";
 import { fetchProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 import { precio } from "@/lib/precio";
+import { oferta } from "@/lib/oferta";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -38,6 +39,8 @@ export default async function ProductPage({ params }: PageProps) {
     notFound();
   }
 
+  const precioDelProducto = oferta(product);
+
   const attributeEntries = Object.entries(product.attributes ?? {}).filter(
     ([, value]) => value !== null && value !== undefined && value !== ""
   );
@@ -51,7 +54,17 @@ export default async function ProductPage({ params }: PageProps) {
           <h1 className="font-serif text-5xl leading-tight tracking-wide text-foreground">
             {product.name}
           </h1>
-          <p className="text-3xl text-primary">{precio(product.price)}</p>
+          <div className="flex items-baseline gap-3">
+            <p className="text-3xl text-primary">{precio(precioDelProducto.precio)}</p>
+            {precioDelProducto.precioTachado ? (
+              <>
+                <p className="text-lg text-muted-foreground line-through">
+                  {precio(precioDelProducto.precioTachado)}
+                </p>
+                <span className="etiqueta-oferta">-{precioDelProducto.descuento}%</span>
+              </>
+            ) : null}
+          </div>
           <p className="text-sm leading-relaxed text-muted-foreground">{product.description}</p>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Icon icon="mdi:package-variant-closed" />

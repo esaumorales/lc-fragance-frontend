@@ -10,6 +10,7 @@ import { CartItemRow } from "@/components/molecules/CartItemRow";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
 import { precio } from "@/lib/precio";
+import { oferta } from "@/lib/oferta";
 
 export function CartView() {
   const { user, accessToken, loading: authLoading } = useAuth();
@@ -112,11 +113,31 @@ export function CartView() {
           <Icon icon="mdi:check-circle" className="text-primary" />
           Pedido #{result.order.id.slice(0, 8)} registrado — total {precio(result.order.total)}
         </p>
-        <p className="text-sm text-muted-foreground">
-          Queda pendiente hasta que confirmemos el pago; recién ahí se aparta tu stock. Para
-          finalizar, pagá por Yape a nombre de{" "}
-          <span className="text-foreground">{result.yape.name}</span> al número{" "}
-          <span className="text-foreground">{result.yape.phone}</span> y enviá el comprobante.
+        {/* Tres pasos y en orden, porque es lo que la persona tiene que hacer
+            ahora. Ya no se pide comprobante: el pago lo aprueba el admin. */}
+        <ol className="flex flex-col gap-3 text-sm text-muted-foreground">
+          <li className="flex gap-3">
+            <span className="paso-del-pedido">1</span>
+            <span>
+              Yapeá <span className="text-foreground">{precio(result.order.total)}</span> a{" "}
+              <span className="text-foreground">{result.yape.name}</span>, al{" "}
+              <span className="text-foreground">{result.yape.phone}</span>.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="paso-del-pedido">2</span>
+            <span>Avisanos por WhatsApp con el botón de acá abajo.</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="paso-del-pedido">3</span>
+            <span>
+              Lo damos por pagado y recién ahí se aparta tu stock. Te confirmamos por el mismo
+              chat.
+            </span>
+          </li>
+        </ol>
+        <p className="text-xs text-muted-foreground">
+          No hace falta que mandes el comprobante: lo verificamos nosotros.
         </p>
         {result.whatsappUrl ? (
           <a
@@ -139,8 +160,10 @@ export function CartView() {
     return <div className="cart-empty"><Icon icon="mdi:shopping-outline" /><p>Tu carrito está vacío.</p><span className="mt-3 block font-serif text-3xl text-foreground">Elige algo que hable de ti.</span></div>;
   }
 
+  // El mismo precio que cobra el backend: si el total de la pantalla usara el
+  // de lista, no coincidiria con el del pedido.
   const total = cart.items.reduce(
-    (sum, item) => sum + Number(item.product.price) * item.quantity,
+    (sum, item) => sum + Number(oferta(item.product).precio) * item.quantity,
     0
   );
 

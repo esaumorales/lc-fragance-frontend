@@ -14,6 +14,7 @@ import {
   type UsuarioDelPanel,
 } from "@/lib/admin-users-api";
 import { esSuperadmin } from "@/lib/roles";
+import { filtrosPara, tarjetasPara, type FiltroDeUsuarios } from "@/lib/visibilidad-usuarios";
 import { cn } from "@/lib/cn";
 import type { RolDeUsuario } from "@/lib/types";
 import { Input } from "@/components/atoms/Input";
@@ -21,18 +22,17 @@ import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
 import { ConfirmacionDialog } from "@/components/organisms/ConfirmacionDialog";
 
+const NOMBRE_EN_PLURAL: Record<RolDeUsuario, string> = {
+  CUSTOMER: "Clientes",
+  ADMIN: "Administradores",
+  SUPERADMIN: "Superadmin",
+};
+
 const NOMBRE_DEL_ROL: Record<RolDeUsuario, string> = {
   CUSTOMER: "Cliente",
   ADMIN: "Administrador",
   SUPERADMIN: "Superadministrador",
 };
-
-const FILTROS: { id: RolDeUsuario | "TODOS"; label: string }[] = [
-  { id: "TODOS", label: "Todos" },
-  { id: "CUSTOMER", label: "Clientes" },
-  { id: "ADMIN", label: "Administradores" },
-  { id: "SUPERADMIN", label: "Superadmin" },
-];
 
 function fecha(iso: string) {
   return new Date(iso).toLocaleDateString("es-PE", {
@@ -60,9 +60,11 @@ type Pendiente = {
 export function AdminUsersView() {
   const { accessToken, user } = useAuth();
   const soyDuenio = esSuperadmin(user?.role);
+  const filtros = filtrosPara(user?.role);
+  const tarjetas = tarjetasPara(user?.role);
 
   const [datos, setDatos] = useState<ListadoDeUsuarios | null>(null);
-  const [filtro, setFiltro] = useState<RolDeUsuario | "TODOS">("TODOS");
+  const [filtro, setFiltro] = useState<FiltroDeUsuarios>("TODOS");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function AdminUsersView() {
       .then(setDatos)
       .catch(() => setError("No se pudieron cargar los usuarios"))
       .finally(() => setCargando(false));
-  }, [accessToken, filtro]);
+  }, [accessToken, filtro, setCargando]);
 
   useEffect(() => {
     cargar();
@@ -179,27 +181,24 @@ export function AdminUsersView() {
       </header>
 
       {datos ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {(
-            [
-              ["Total", datos.total],
-              ["Clientes", datos.porRol.CUSTOMER],
-              ["Administradores", datos.porRol.ADMIN],
-              ["Superadmin", datos.porRol.SUPERADMIN],
-            ] as const
-          ).map(([etiqueta, valor]) => (
-            <div key={etiqueta} className="surface p-4">
+        <div className={cn("grid gap-3", tarjetas.length > 1 ? "grid-cols-2 sm:grid-cols-4" : "")}>
+          {tarjetas.map((cual) => (
+            <div key={cual} className="surface p-4">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                {etiqueta}
+                {cual === "TOTAL" ? "Total" : NOMBRE_EN_PLURAL[cual]}
               </p>
-              <p className="mt-2 font-serif text-3xl text-foreground">{valor}</p>
+              <p className="mt-2 font-serif text-3xl text-foreground">
+                {cual === "TOTAL" ? datos.total : (datos.porRol[cual] ?? 0)}
+              </p>
             </div>
           ))}
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {FILTROS.map((f) => (
+      {/* Sin pestañas cuando hay un solo rol para mirar: elegir entre una
+          opción no es elegir. */}
+      <div className={cn("flex-wrap gap-2", filtros.length > 0 ? "flex" : "hidden")}>
+        {filtros.map((f) => (
           <button
             key={f.id}
             type="button"

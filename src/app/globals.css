@@ -567,3 +567,9 @@ body { line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) {
   .perfume-spotlight, .perfume-spotlight-texto, .perfume-spotlight-escena img, .perfume-spotlight-modelo, .perfume-spotlight-resplandor { animation: none; }
 }
+
+/* El numerito de cada paso del pedido confirmado. */
+.paso-del-pedido { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--primary); border-radius: 50%; font-size: 11px; color: var(--primary); }
+
+/* Cuanto baja una oferta, al lado del precio. */
+.etiqueta-oferta { border: 1px solid var(--primary); padding: 2px 8px; font-size: 11px; letter-spacing: .08em; color: var(--primary); }
