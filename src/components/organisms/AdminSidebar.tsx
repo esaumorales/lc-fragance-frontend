@@ -10,6 +10,8 @@ const links = [
   { href: "/admin/productos", label: "Productos", icon: "mdi:bottle-tonic-outline" },
   { href: "/admin/pedidos", label: "Pedidos", icon: "mdi:receipt-text-outline" },
   { href: "/admin/categorias", label: "Categorías", icon: "mdi:shape-outline" },
+  // Los datos de cobro son de la tienda: cualquier admin los maneja.
+  { href: "/admin/pago", label: "Pagos", icon: "mdi:cash-multiple" },
   // La ven los dos roles: un admin entra en modo lectura.
   { href: "/admin/usuarios", label: "Usuarios", icon: "mdi:account-group-outline" },
 ];

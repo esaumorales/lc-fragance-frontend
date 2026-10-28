@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { avanzarPedido, cancelarPedido, confirmarPedido, listarPedidos } from "@/lib/pedidos-api";
 import { cn } from "@/lib/cn";
 import type { EstadoPedido, Pedido } from "@/lib/types";
+import { PlazoDialog } from "@/components/organisms/PlazoDialog";
 import { Icon } from "@/components/atoms/Icon";
 import { precio } from "@/lib/precio";
 
@@ -38,6 +39,8 @@ export function PedidosAdminView() {
   const { accessToken } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [filtro, setFiltro] = useState<EstadoPedido | "TODOS">("PENDING");
+  // El pedido que espera que le pongan plazo antes de aceptarse.
+  const [aceptando, setAceptando] = useState<Pedido | null>(null);
   const [cargando, setCargando] = useState(true);
   const [trabajando, setTrabajando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -133,10 +136,16 @@ export function PedidosAdminView() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm text-foreground">
-                    #{pedido.id.slice(0, 8)} · {pedido.user.name}
+                    #{pedido.id.slice(0, 8)} · {pedido.nombre}
+                    {/* Sin cuenta tambien se compra: conviene que se note. */}
+                    {!pedido.user ? (
+                      <span className="ml-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                        sin cuenta
+                      </span>
+                    ) : null}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {pedido.user.email} · {fecha(pedido.createdAt)}
+                    {pedido.correo} · {pedido.celular} · {fecha(pedido.createdAt)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -151,6 +160,46 @@ export function PedidosAdminView() {
                   </p>
                 </div>
               </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-hairline pt-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Icon icon={pedido.entrega === "DELIVERY" ? "mdi:moped-outline" : "mdi:storefront-outline"} className="h-4 w-4 text-primary" />
+                  {pedido.entrega === "DELIVERY" ? pedido.direccion : "Recojo en tienda"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Icon icon="mdi:cash" className="h-4 w-4 text-primary" />
+                  {pedido.metodoPago === "YAPE" ? "Yape" : "Transferencia"}
+                </span>
+                {/* El comprobante lo mira cualquier admin antes de aceptar. */}
+                {pedido.voucherUrl ? (
+                  <a
+                    href={pedido.voucherUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-primary underline-offset-4 hover:underline"
+                  >
+                    <Icon icon="mdi:receipt-text-check-outline" className="h-4 w-4" />
+                    Ver comprobante
+                  </a>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <Icon icon="mdi:receipt-text-remove-outline" className="h-4 w-4" />
+                    Sin comprobante
+                  </span>
+                )}
+                {pedido.plazo ? (
+                  <span className="flex items-center gap-1.5">
+                    <Icon icon="mdi:clock-outline" className="h-4 w-4 text-primary" />
+                    {pedido.plazo}
+                  </span>
+                ) : null}
+              </div>
+
+              {pedido.nota ? (
+                <p className="border-l-2 border-hairline pl-3 text-xs italic text-muted-foreground">
+                  {pedido.nota}
+                </p>
+              ) : null}
 
               <ul className="flex flex-col gap-1 border-t border-hairline pt-3">
                 {pedido.items.map((item) => (
@@ -170,13 +219,7 @@ export function PedidosAdminView() {
                   <button
                     type="button"
                     disabled={trabajando === pedido.id}
-                    onClick={() =>
-                      ejecutar(
-                        pedido.id,
-                        () => confirmarPedido(accessToken!, pedido.id),
-                        `Pedido #${pedido.id.slice(0, 8)} confirmado, el stock ya se descontó.`
-                      )
-                    }
+                    onClick={() => setAceptando(pedido)}
                     className="border border-primary bg-primary/10 px-3 py-2 text-xs uppercase tracking-[0.1em] text-primary"
                   >
                     {trabajando === pedido.id ? "Confirmando…" : "Confirmar compra"}
@@ -240,6 +283,22 @@ export function PedidosAdminView() {
           ))}
         </ul>
       )}
+
+      {aceptando ? (
+        <PlazoDialog
+          pedido={aceptando.id.slice(0, 8)}
+          onCerrar={() => setAceptando(null)}
+          onConfirmar={(plazo) => {
+            const pedido = aceptando;
+            setAceptando(null);
+            void ejecutar(
+              pedido.id,
+              () => confirmarPedido(accessToken!, pedido.id, plazo),
+              `Pedido #${pedido.id.slice(0, 8)} aceptado. Le avisamos a ${pedido.correo}.`
+            );
+          }}
+        />
+      ) : null}
     </div>
   );
 }

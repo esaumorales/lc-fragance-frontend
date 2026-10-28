@@ -27,6 +27,16 @@ function pedido(status: Pedido["status"], id = "aaaaaaaa-1111-2222-3333-44444444
     status,
     total: "90.00",
     createdAt: "2026-09-24T10:00:00.000Z",
+    nombre: "Cliente Prueba",
+    correo: "cliente@example.com",
+    celular: "999111222",
+    metodoPago: "YAPE",
+    voucherUrl: null,
+    entrega: "RECOJO",
+    direccion: null,
+    costoEnvio: "0.00",
+    nota: null,
+    plazo: null,
     user: { id: "u-1", name: "Cliente Prueba", email: "cliente@example.com" },
     items: [
       {
@@ -53,17 +63,45 @@ describe("PedidosAdminView", () => {
     expect(screen.getByText(/2× Oud Real/)).toBeInTheDocument();
   });
 
-  it("confirmar descuenta el stock y lo dice", async () => {
+  // Aceptar pide el plazo primero: es lo que le llega por correo a la persona.
+  it("confirmar pregunta el plazo antes de descontar el stock", async () => {
     const user = userEvent.setup();
     confirmar.mockResolvedValue(pedido("PAID"));
     render(<PedidosAdminView />);
 
     await user.click(await screen.findByRole("button", { name: /Confirmar compra/ }));
 
+    expect(confirmar).not.toHaveBeenCalled();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("al elegir el plazo, lo manda con el pedido y avisa a quién se le escribió", async () => {
+    const user = userEvent.setup();
+    confirmar.mockResolvedValue(pedido("PAID"));
+    render(<PedidosAdminView />);
+
+    await user.click(await screen.findByRole("button", { name: /Confirmar compra/ }));
+    await user.click(await screen.findByRole("button", { name: "En 2 o 3 días" }));
+    await user.click(screen.getByRole("button", { name: /Aceptar y avisar/ }));
+
     await waitFor(() =>
-      expect(confirmar).toHaveBeenCalledWith("un-token", "aaaaaaaa-1111-2222-3333-444444444444")
+      expect(confirmar).toHaveBeenCalledWith(
+        "un-token",
+        "aaaaaaaa-1111-2222-3333-444444444444",
+        "En 2 o 3 días"
+      )
     );
-    expect(await screen.findByText(/el stock ya se descontó/)).toBeInTheDocument();
+    expect(await screen.findByText(/Le avisamos a cliente@example.com/)).toBeInTheDocument();
+  });
+
+  // Sin plazo no se puede aceptar: el correo quedaria sin la fecha prometida.
+  it("no deja aceptar sin poner un plazo", async () => {
+    const user = userEvent.setup();
+    render(<PedidosAdminView />);
+
+    await user.click(await screen.findByRole("button", { name: /Confirmar compra/ }));
+
+    expect(screen.getByRole("button", { name: /Aceptar y avisar/ })).toBeDisabled();
   });
 
   // Entre el checkout y la confirmación pueden haber vendido lo mismo a otro.
@@ -73,6 +111,8 @@ describe("PedidosAdminView", () => {
     render(<PedidosAdminView />);
 
     await user.click(await screen.findByRole("button", { name: /Confirmar compra/ }));
+    await user.click(await screen.findByRole("button", { name: "Hoy mismo" }));
+    await user.click(screen.getByRole("button", { name: /Aceptar y avisar/ }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("pide 2, hay 1");
   });

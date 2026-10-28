@@ -573,3 +573,55 @@ body { line-height: 1.6; }
 
 /* Cuanto baja una oferta, al lado del precio. */
 .etiqueta-oferta { border: 1px solid var(--primary); padding: 2px 8px; font-size: 11px; letter-spacing: .08em; color: var(--primary); }
+
+/* --- Checkout ----------------------------------------------------------- */
+.checkout-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: clamp(24px, 4vw, 56px); align-items: start; }
+.checkout-bloque { border-top: 1px solid var(--hairline); padding-top: clamp(18px, 2.5vw, 28px); display: flex; flex-direction: column; gap: 16px; }
+.checkout-titulo { font-family: var(--font-serif), Georgia, serif; font-weight: 300; font-size: clamp(22px, 2.4vw, 30px); color: var(--foreground); }
+
+.checkout-campo { display: flex; flex-direction: column; gap: 7px; }
+.checkout-campo > span { font-size: var(--text-3xs); letter-spacing: .18em; text-transform: uppercase; color: var(--muted-foreground); }
+.checkout-campo > small { font-size: 11px; color: var(--muted-foreground); }
+.checkout-nota { width: 100%; min-height: 86px; resize: vertical; padding: 12px 14px; background: var(--background); border: 1px solid var(--border); color: var(--foreground); font: inherit; font-size: 14px; }
+
+/* Pestañas de pago y de entrega: la elegida se llena de dorado. */
+.checkout-pestanas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
+.checkout-pestana { padding: 14px 12px; border: 1px solid var(--border); background: transparent; font-size: var(--text-3xs); letter-spacing: .16em; text-transform: uppercase; color: var(--muted-foreground); transition: background .25s var(--ease-entrada), color .25s var(--ease-entrada); }
+.checkout-pestana:hover { border-color: var(--primary); color: var(--primary); }
+.checkout-pestana--activa { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+
+.checkout-datos { border: 1px solid var(--hairline); background: var(--soft-surface); }
+.campo-copiar { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--hairline); }
+.checkout-datos .campo-copiar:last-child { border-bottom: 0; }
+.campo-copiar-etiqueta { font-size: var(--text-3xs); letter-spacing: .18em; text-transform: uppercase; color: var(--muted-foreground); }
+.campo-copiar-valor { min-width: 0; overflow-wrap: anywhere; color: var(--foreground); }
+.campo-copiar-boton { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border: 1px solid var(--primary); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--primary); }
+
+.checkout-monto { font-size: 15px; color: var(--muted-foreground); }
+.checkout-monto strong { font-family: var(--font-serif), Georgia, serif; font-size: 25px; font-weight: 400; color: var(--foreground); }
+
+/* La zona de adjuntar: borde punteado hasta que hay archivo. */
+.checkout-voucher { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: clamp(26px, 4vw, 40px); border: 1px dashed var(--border); color: var(--muted-foreground); cursor: pointer; text-align: center; transition: border-color .3s var(--ease-entrada); }
+.checkout-voucher:hover { border-color: var(--primary); }
+.checkout-voucher--listo { border-style: solid; border-color: var(--primary); color: var(--primary); }
+.checkout-voucher small { font-size: 11px; }
+
+.checkout-mas { display: flex; align-items: baseline; gap: 10px; color: var(--foreground); }
+.checkout-mas small { font-size: 11px; color: var(--muted-foreground); }
+
+.checkout-resumen { position: sticky; top: 140px; display: flex; flex-direction: column; gap: 16px; padding: clamp(20px, 2.4vw, 28px); border: 1px solid var(--hairline); background: var(--soft-surface); }
+.checkout-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: var(--text-3xs); letter-spacing: .18em; text-transform: uppercase; color: var(--muted-foreground); }
+.checkout-total span:last-child { font-family: var(--font-serif), Georgia, serif; font-size: 24px; letter-spacing: 0; text-transform: none; color: var(--primary); }
+.checkout-volver { font-size: var(--text-3xs); letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); }
+
+@media (max-width: 900px) {
+  /* El resumen pasa arriba: en vertical, saber cuánto se paga va primero. */
+  .checkout-layout { grid-template-columns: 1fr; }
+  .checkout-resumen { position: static; order: -1; }
+  .campo-copiar { grid-template-columns: 1fr auto; row-gap: 4px; }
+  .campo-copiar-etiqueta { grid-column: 1 / -1; }
+}
+
+/* Diálogo chico centrado, para confirmar algo sin salir de la pantalla. */
+.dialogo-fondo { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgb(0 0 0 / .6); }
+.dialogo-caja { width: min(440px, 100%); display: flex; flex-direction: column; gap: 16px; padding: clamp(20px, 3vw, 28px); background: var(--background); border: 1px solid var(--border); }

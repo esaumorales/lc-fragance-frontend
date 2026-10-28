@@ -1,107 +1,136 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CartView } from "@/components/organisms/CartView";
-import type { Cart, CheckoutResult } from "@/lib/types";
+import { guardarCarrito, leerCarrito, vaciar } from "@/lib/carrito-local";
 
-const { api } = vi.hoisted(() => ({
-  api: {
-    getCart: vi.fn(),
-    checkout: vi.fn(),
-    updateCartItem: vi.fn(),
-    removeCartItem: vi.fn(),
-  },
+const { api, sesion } = vi.hoisted(() => ({
+  api: { getCart: vi.fn(), updateCartItem: vi.fn(), removeCartItem: vi.fn() },
+  sesion: { accessToken: null as string | null },
 }));
 
 vi.mock("@/lib/cart-api", () => api);
-vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ user: { id: "u1", name: "Ana" }, accessToken: "token", loading: false }),
-}));
-vi.mock("@/lib/cart-context", () => ({ useCart: () => ({ refresh: vi.fn(), count: 1 }) }));
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ ...sesion, loading: false }) }));
+vi.mock("@/lib/cart-context", () => ({ useCart: () => ({ refresh: vi.fn(), itemCount: 1 }) }));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element
   default: (props: { alt: string }) => <img alt={props.alt} />,
 }));
 
-const carrito = {
-  id: "cart-1",
-  items: [
-    {
-      id: "i1",
-      productId: "p1",
-      quantity: 1,
-      product: {
-        id: "p1",
-        name: "Velvet Musk",
-        slug: "velvet-musk",
-        description: "",
-        price: "74.50",
-        sku: "S-1",
-        stock: 5,
-        images: [],
-        model3dUrl: null,
-        attributes: {},
-        isActive: true,
-        categoryId: "c1",
-      },
-    },
-  ],
-} as unknown as Cart;
-
-function resultado(yape: { name: string; phone: string }): CheckoutResult {
-  return {
-    order: { id: "5e24fa01-aaaa-bbbb-cccc-dddddddddddd", status: "PENDING", total: "74.50" },
-    whatsappUrl: "https://wa.me/51988333444?text=Hola%2C%20quiero%20este%20producto%3A",
-    yape,
-  } as unknown as CheckoutResult;
-}
+const PRODUCTO = {
+  productId: "p1",
+  slug: "oud-real",
+  name: "Oud Real",
+  price: "100.00",
+  offerPrice: null,
+  image: null,
+  quantity: 2,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
-  api.getCart.mockResolvedValue(carrito);
+  sesion.accessToken = null;
+  vaciar();
 });
 
-async function confirmar() {
-  render(<CartView />);
-  await waitFor(() => expect(screen.getByRole("button", { name: /pedido/i })).toBeEnabled());
-  await userEvent.click(screen.getByRole("button", { name: /pedido/i }));
-}
+afterEach(() => vaciar());
 
-describe("después de hacer el pedido", () => {
-  it("el botón lleva al WhatsApp con el pedido ya escrito", async () => {
-    api.checkout.mockResolvedValue(resultado({ name: "LC Fragance", phone: "999888777" }));
+describe("el carrito de quien no tiene cuenta", () => {
+  // Antes esta pantalla mandaba al login: se perdía la venta de quien no se
+  // quería registrar.
+  it("muestra lo que hay guardado en el navegador", async () => {
+    guardarCarrito([PRODUCTO]);
 
-    await confirmar();
+    render(<CartView />);
 
-    const enlace = await screen.findByRole("link", { name: /lo quiero/i });
-    expect(enlace).toHaveAttribute("href", expect.stringContaining("wa.me/51988333444"));
-    expect(decodeURIComponent(enlace.getAttribute("href") ?? "")).toContain("quiero este producto");
+    expect(await screen.findByText("Oud Real")).toBeInTheDocument();
+    expect(api.getCart).not.toHaveBeenCalled();
   });
 
-  it("muestra el número del Yape cuando está configurado", async () => {
-    api.checkout.mockResolvedValue(resultado({ name: "LC Fragance", phone: "999888777" }));
+  it("cambiar la cantidad queda guardado", async () => {
+    guardarCarrito([PRODUCTO]);
+    render(<CartView />);
+    await screen.findByText("Oud Real");
 
-    await confirmar();
+    await userEvent.click(screen.getByRole("button", { name: /aumentar/i }));
 
-    expect(await screen.findByText("999888777")).toBeInTheDocument();
+    await waitFor(() => expect(leerCarrito()[0]!.quantity).toBe(3));
   });
 
-  // Sin número quedaba un "al ." colgando en medio de la frase.
-  it("no deja la frase cortada si no hay número de Yape", async () => {
-    api.checkout.mockResolvedValue(resultado({ name: "LC Fragance", phone: "" }));
+  it("quitar el producto lo saca de lo guardado", async () => {
+    guardarCarrito([PRODUCTO]);
+    render(<CartView />);
+    await screen.findByText("Oud Real");
 
-    await confirmar();
+    await userEvent.click(screen.getByRole("button", { name: /quitar/i }));
 
-    const paso = await screen.findByText(/Yapeá/);
-    expect(paso.textContent).not.toMatch(/al\s*\./);
-    expect(paso.textContent).toContain("LC Fragance");
+    await waitFor(() => expect(leerCarrito()).toEqual([]));
   });
 
-  it("no le pide el comprobante a quien compra", async () => {
-    api.checkout.mockResolvedValue(resultado({ name: "LC Fragance", phone: "999888777" }));
+  it("avisa que se puede comprar sin crear cuenta", async () => {
+    guardarCarrito([PRODUCTO]);
 
-    await confirmar();
+    render(<CartView />);
 
-    expect(await screen.findByText(/No hace falta que mandes el comprobante/)).toBeInTheDocument();
+    expect(await screen.findByText(/sin crear una cuenta/)).toBeInTheDocument();
+  });
+});
+
+describe("el carrito de quien tiene cuenta", () => {
+  beforeEach(() => {
+    sesion.accessToken = "un-token";
+    api.getCart.mockResolvedValue({
+      items: [
+        {
+          id: "i1",
+          productId: "p1",
+          quantity: 2,
+          product: { id: "p1", name: "Oud Real", slug: "oud-real", price: "100.00", images: [] },
+        },
+      ],
+    });
+  });
+
+  it("lo trae del servidor", async () => {
+    render(<CartView />);
+
+    expect(await screen.findByText("Oud Real")).toBeInTheDocument();
+    expect(api.getCart).toHaveBeenCalledWith("un-token");
+  });
+
+  it("no ofrece crear cuenta: ya tiene una", async () => {
+    render(<CartView />);
+    await screen.findByText("Oud Real");
+
+    expect(screen.queryByText(/sin crear una cuenta/)).not.toBeInTheDocument();
+  });
+});
+
+describe("el total y el paso siguiente", () => {
+  it("suma lo que cuesta cada renglón", async () => {
+    guardarCarrito([PRODUCTO]);
+
+    render(<CartView />);
+
+    expect(await screen.findByText(/Total: .*200[.,]00/)).toBeInTheDocument();
+  });
+
+  // El pago ahora vive en su propia pantalla.
+  it("lleva al checkout", async () => {
+    guardarCarrito([PRODUCTO]);
+
+    render(<CartView />);
+
+    expect(await screen.findByRole("link", { name: /Continuar al pago/ })).toHaveAttribute(
+      "href",
+      "/checkout"
+    );
+  });
+
+  it("sin nada adentro, no ofrece pagar", async () => {
+    render(<CartView />);
+
+    expect(await screen.findByText(/carrito está vacío/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Continuar al pago/ })).not.toBeInTheDocument();
   });
 });

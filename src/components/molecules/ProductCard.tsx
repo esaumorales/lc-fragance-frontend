@@ -6,6 +6,7 @@ import { Icon } from "@/components/atoms/Icon";
 import { AddToCartButton } from "@/components/molecules/AddToCartButton";
 import { precio } from "@/lib/precio";
 import { oferta } from "@/lib/oferta";
+import { paraCarrito } from "@/lib/carrito-local";
 
 // Detalle editorial breve tomado de attributes (agnostico de rubro): notas
 // para perfumes, marca para tecnologia, o nada si el producto no trae esos
@@ -101,7 +102,7 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
 
         <AddToCartButton
-          productId={product.id}
+          producto={paraCarrito(product)}
           stock={product.stock}
           compact
           variant="ghost"

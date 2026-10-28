@@ -79,10 +79,47 @@ export type Cart = {
   items: CartItem[];
 };
 
+export type MetodoDePago = "YAPE" | "TRANSFERENCIA";
+export type TipoDeEntrega = "RECOJO" | "DELIVERY";
+
+/** Los datos de cobro de la tienda, tal como los ve quien compra. */
+export type DatosDeCobro = {
+  titular: string | null;
+  yape: string | null;
+  banco: string | null;
+  cuenta: string | null;
+  cci: string | null;
+  metodos: MetodoDePago[];
+  entregas: TipoDeEntrega[];
+  costoDelivery: string;
+  /** Null cuando se puede comprar; si no, por que no. */
+  motivo: string | null;
+};
+
+/** Todo lo del panel, incluido lo que no sale al publico. */
+export type ConfiguracionDePago = {
+  titular: string | null;
+  yape: string | null;
+  banco: string | null;
+  cuenta: string | null;
+  cci: string | null;
+  correoDeAvisos: string | null;
+  recojoActivo: boolean;
+  deliveryActivo: boolean;
+  costoDelivery: string;
+};
+
 export type CheckoutResult = {
-  order: { id: string; status: string; total: string };
+  order: {
+    id: string;
+    status: string;
+    total: string;
+    nombre: string;
+    correo: string;
+    entrega: TipoDeEntrega;
+    costoEnvio: string;
+  };
   whatsappUrl: string | null;
-  yape: { phone: string; name: string };
 };
 
 export type Direccion = {
@@ -105,7 +142,21 @@ export type Pedido = {
   status: EstadoPedido;
   total: string;
   createdAt: string;
-  user: { id: string; name: string; email: string };
+
+  // Van en el pedido y no en la cuenta: tambien compra quien no tiene una.
+  nombre: string;
+  correo: string;
+  celular: string;
+  metodoPago: MetodoDePago;
+  voucherUrl: string | null;
+  entrega: TipoDeEntrega;
+  direccion: string | null;
+  costoEnvio: string;
+  nota: string | null;
+  plazo: string | null;
+
+  /** Null cuando compro sin cuenta. */
+  user: { id: string; name: string; email: string } | null;
   items: {
     id: string;
     quantity: number;

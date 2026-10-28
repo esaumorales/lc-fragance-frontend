@@ -3,6 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getCart } from "@/lib/cart-api";
+import { contar } from "@/lib/carrito-local";
+import { useCarritoLocal } from "@/lib/use-carrito-local";
 
 type CartContextValue = {
   itemCount: number;
@@ -14,6 +16,9 @@ const CartContext = createContext<CartContextValue | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const { accessToken } = useAuth();
   const [count, setCount] = useState(0);
+  // Sin sesion el carrito vive en el navegador: se lee de donde esta en vez
+  // de copiarlo a un estado desde un efecto.
+  const local = useCarritoLocal();
   // Cada refresh() incrementa este contador y vuelve a disparar el efecto.
   const [reloads, setReloads] = useState(0);
 
@@ -38,11 +43,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => setReloads((n) => n + 1), []);
 
-  // Sin sesion el carrito esta vacio: se deriva en el render en vez de
-  // sincronizarlo con un setState dentro del efecto.
-  const itemCount = accessToken ? count : 0;
-
-  return <CartContext.Provider value={{ itemCount, refresh }}>{children}</CartContext.Provider>;
+  return <CartContext.Provider value={{ itemCount: accessToken ? count : contar(local), refresh }}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

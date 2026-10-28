@@ -7,6 +7,7 @@ import { fetchProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 import { precio } from "@/lib/precio";
 import { oferta } from "@/lib/oferta";
+import { paraCarrito } from "@/lib/carrito-local";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -70,7 +71,7 @@ export default async function ProductPage({ params }: PageProps) {
             <Icon icon="mdi:package-variant-closed" />
             {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock"}
           </p>
-          <AddToCartButton productId={product.id} stock={product.stock} className="mt-2 w-full gap-2 py-4" />
+          <AddToCartButton producto={paraCarrito(product)} stock={product.stock} className="mt-2 w-full gap-2 py-4" />
 
           <div className="mt-4 flex flex-col gap-3 surface p-5">
             <p className="text-[11px] uppercase tracking-[0.2em] text-primary">Detalles</p>
