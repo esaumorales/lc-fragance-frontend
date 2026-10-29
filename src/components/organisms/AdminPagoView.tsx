@@ -82,9 +82,11 @@ export function AdminPagoView() {
     setGuardando(true);
     setError(null);
     try {
+      // Un <input type="number"> devuelve texto: "0", no 0. Mandarlo tal cual
+      // lo rechaza el backend, que lo valida como numero.
       const guardado = await guardarConfiguracion(accessToken, {
         ...form,
-        costoDelivery: form.costoDelivery,
+        costoDelivery: Number(form.costoDelivery) || 0,
       } as never);
       setForm(desdeLaApi(guardado));
       setAviso("Guardado.");
