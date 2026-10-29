@@ -66,6 +66,7 @@ afterEach(() => vaciar());
 async function completarDatos() {
   await userEvent.type(screen.getByPlaceholderText("Nombre y apellidos"), "Ana Torres");
   await userEvent.type(screen.getByPlaceholderText("9XX XXX XXX"), "999111222");
+  await userEvent.type(screen.getByPlaceholderText("70123456"), "70123456");
   await userEvent.type(screen.getByPlaceholderText("nombre@correo.com"), "ana@gmail.com");
 }
 
@@ -128,6 +129,7 @@ describe("comprar con cuenta", () => {
     // El nombre y el correo vienen de la cuenta; el celular no lo guardamos
     // en la sesion, asi que se escribe igual.
     await userEvent.type(screen.getByPlaceholderText("9XX XXX XXX"), "999111222");
+    await userEvent.type(screen.getByPlaceholderText("70123456"), "70123456");
 
     await userEvent.click(screen.getByRole("button", { name: /Hacer el pedido/ }));
 
@@ -250,5 +252,25 @@ describe("después de pedir", () => {
       "href",
       "https://wa.me/51988333444?text=hola"
     );
+  });
+});
+
+describe("el documento", () => {
+  // El courier lo pide para entregar, asi que no se puede pedir sin el.
+  it("viaja con el pedido", async () => {
+    render(<CheckoutView />);
+    await screen.findByText("Oud Real");
+    await completarDatos();
+
+    await userEvent.click(screen.getByRole("button", { name: /Hacer el pedido/ }));
+
+    await waitFor(() => expect(api.hacerPedido).toHaveBeenCalled());
+    expect(api.hacerPedido.mock.calls[0]![0].dni).toBe("70123456");
+  });
+
+  it("explica para qué se pide", async () => {
+    render(<CheckoutView />);
+
+    expect(await screen.findByText(/El courier lo pide/)).toBeInTheDocument();
   });
 });

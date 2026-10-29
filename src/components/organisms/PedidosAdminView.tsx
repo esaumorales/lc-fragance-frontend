@@ -145,7 +145,8 @@ export function PedidosAdminView() {
                     ) : null}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {pedido.correo} · {pedido.celular} · {fecha(pedido.createdAt)}
+                    {pedido.correo} · {pedido.celular} · DNI {pedido.dni} ·{" "}
+                    {fecha(pedido.createdAt)}
                   </p>
                 </div>
                 <div className="text-right">

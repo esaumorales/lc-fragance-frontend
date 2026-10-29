@@ -147,6 +147,7 @@ export type Pedido = {
   nombre: string;
   correo: string;
   celular: string;
+  dni: string;
   metodoPago: MetodoDePago;
   voucherUrl: string | null;
   entrega: TipoDeEntrega;

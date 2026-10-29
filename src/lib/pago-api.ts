@@ -11,6 +11,7 @@ export type PedidoNuevo = {
   nombre: string;
   correo: string;
   celular: string;
+  dni: string;
   metodoPago: "YAPE" | "TRANSFERENCIA";
   voucherUrl?: string | null;
   entrega: "RECOJO" | "DELIVERY";

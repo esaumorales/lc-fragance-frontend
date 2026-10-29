@@ -30,6 +30,7 @@ function pedido(status: Pedido["status"], id = "aaaaaaaa-1111-2222-3333-44444444
     nombre: "Cliente Prueba",
     correo: "cliente@example.com",
     celular: "999111222",
+    dni: "70123456",
     metodoPago: "YAPE",
     voucherUrl: null,
     entrega: "RECOJO",

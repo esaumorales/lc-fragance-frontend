@@ -67,6 +67,7 @@ export function CheckoutView() {
   const [nombreElegido, setNombre] = useState<string | null>(null);
   const [correoElegido, setCorreo] = useState<string | null>(null);
   const [celular, setCelular] = useState("");
+  const [dni, setDni] = useState("");
   const [metodoElegido, setMetodo] = useState<MetodoDePago | null>(null);
   const [entregaElegida, setEntrega] = useState<TipoDeEntrega | null>(null);
   const [direccion, setDireccion] = useState("");
@@ -151,6 +152,7 @@ export function CheckoutView() {
           nombre: nombre.trim(),
           correo: correo.trim(),
           celular: celular.trim(),
+          dni: dni.trim(),
           metodoPago: metodo,
           voucherUrl,
           entrega,
@@ -228,6 +230,18 @@ export function CheckoutView() {
               inputMode="tel"
               required
             />
+          </label>
+          <label className="checkout-campo">
+            <span>DNI o carné de extranjería</span>
+            <Input
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              placeholder="70123456"
+              inputMode="numeric"
+              required
+              minLength={8}
+            />
+            <small>El courier lo pide para entregarte el pedido.</small>
           </label>
           <label className="checkout-campo">
             <span>Correo</span>
