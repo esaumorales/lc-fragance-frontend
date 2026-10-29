@@ -1,6 +1,27 @@
 import type { Category, Product, ProductPage } from "@/lib/types";
 import { API_BASE } from "@/lib/api-base";
 
+/**
+ * Un fallo de la API, con su codigo.
+ *
+ * Sin el codigo, quien llama no puede distinguir "esto no existe" de "la API
+ * no contesta", y las dos cosas terminan en la misma pantalla.
+ */
+export class ErrorDeApi extends Error {
+  constructor(
+    readonly status: number,
+    readonly path: string
+  ) {
+    super(`API error ${status} on ${path}`);
+    this.name = "ErrorDeApi";
+  }
+
+  /** Lo que se pidio no existe. Cualquier otro codigo es un problema nuestro. */
+  get noExiste(): boolean {
+    return this.status === 404;
+  }
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
@@ -8,7 +29,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status} on ${path}`);
+    throw new ErrorDeApi(res.status, path);
   }
 
   return res.json() as Promise<T>;

@@ -3,7 +3,7 @@ import { CatalogLayout } from "@/components/templates/CatalogLayout";
 import { Icon } from "@/components/atoms/Icon";
 import { AddToCartButton } from "@/components/molecules/AddToCartButton";
 import { ProductVisual } from "@/components/organisms/ProductVisual";
-import { fetchProduct } from "@/lib/api";
+import { ErrorDeApi, fetchProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 import { precio } from "@/lib/precio";
 import { oferta } from "@/lib/oferta";
@@ -36,8 +36,11 @@ export default async function ProductPage({ params }: PageProps) {
   let product: Product;
   try {
     product = await fetchProduct(slug);
-  } catch {
-    notFound();
+  } catch (error) {
+    // Solo un 404 es "esto no existe". Si la API esta caida, dejar pasar el
+    // error muestra "no pudimos cargar" en vez de mentir con un 404.
+    if (error instanceof ErrorDeApi && error.noExiste) notFound();
+    throw error;
   }
 
   const precioDelProducto = oferta(product);

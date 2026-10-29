@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { CatalogLayout } from "@/components/templates/CatalogLayout";
 import { CatalogFilters } from "@/components/organisms/CatalogFilters";
 import { ProductGrid } from "@/components/organisms/ProductGrid";
-import { fetchCategory, fetchProducts } from "@/lib/api";
+import { ErrorDeApi, fetchCategory, fetchProducts } from "@/lib/api";
 import type { Category } from "@/lib/types";
 
 type PageProps = {
@@ -23,8 +23,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   let category: Category;
   try {
     category = await fetchCategory(slug);
-  } catch {
-    notFound();
+  } catch (error) {
+    // Solo un 404 es "esto no existe". Si la API esta caida, dejar pasar el
+    // error muestra "no pudimos cargar" en vez de mentir con un 404.
+    if (error instanceof ErrorDeApi && error.noExiste) notFound();
+    throw error;
   }
 
   const page = await fetchProducts({

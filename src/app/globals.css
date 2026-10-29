@@ -625,3 +625,13 @@ body { line-height: 1.6; }
 /* Diálogo chico centrado, para confirmar algo sin salir de la pantalla. */
 .dialogo-fondo { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgb(0 0 0 / .6); }
 .dialogo-caja { width: min(440px, 100%); display: flex; flex-direction: column; gap: 16px; padding: clamp(20px, 3vw, 28px); background: var(--background); border: 1px solid var(--border); }
+
+/* --- Pantallas de aviso: 404 y error ------------------------------------ */
+.pantalla-de-aviso { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: 52vh; padding: clamp(32px, 6vw, 72px) var(--page-gutter); text-align: center; }
+/* Sin el layout del sitio alrededor: error.tsx reemplaza la pagina entera. */
+.pantalla-de-aviso--sola { min-height: 100vh; background: var(--background); }
+.pantalla-de-aviso h1 { font-family: var(--font-serif), Georgia, serif; font-weight: 300; font-size: clamp(28px, 4vw, 46px); line-height: 1.1; color: var(--foreground); }
+.pantalla-de-aviso-texto { max-width: 46ch; font-size: var(--text-lg); line-height: 1.8; color: var(--muted-foreground); text-wrap: pretty; }
+.pantalla-de-aviso-codigo { font-family: var(--font-serif), Georgia, serif; font-size: clamp(64px, 12vw, 128px); line-height: 1; color: var(--primary); opacity: .22; }
+.pantalla-de-aviso-acciones { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 22px; margin-top: 8px; }
+.pantalla-de-aviso-codigo-error { margin-top: 10px; font-size: 11px; letter-spacing: .14em; color: var(--muted-foreground); }
