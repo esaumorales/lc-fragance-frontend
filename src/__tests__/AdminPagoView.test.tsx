@@ -168,7 +168,57 @@ describe("el WhatsApp de atención", () => {
   // descubran cuando un cliente no puede escribir.
   it("avisa qué pasa si queda vacío", async () => {
     render(<AdminPagoView />);
+    // Con número cargado se muestra el enlace; el aviso aparece al vaciarlo.
+    await userEvent.clear(await screen.findByLabelText("WhatsApp de atención"));
 
     expect(await screen.findByText(/el botón de WhatsApp no aparece/)).toBeInTheDocument();
+  });
+});
+
+describe("el número de WhatsApp mal escrito", () => {
+  // El error fácil: poner el móvil local y olvidar el 51. Antes el campo lo
+  // aceptaba, el botón aparecía y el enlace abría un chat con nadie.
+  it("avisa que falta el código del país", async () => {
+    render(<AdminPagoView />);
+    const campo = await screen.findByLabelText("WhatsApp de atención");
+
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "974732528");
+
+    expect(await screen.findByText(/Falta el código del país/)).toBeInTheDocument();
+  });
+
+  it("no deja guardar mientras esté mal", async () => {
+    render(<AdminPagoView />);
+    const campo = await screen.findByLabelText("WhatsApp de atención");
+
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "974732528");
+
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeDisabled();
+    expect(api.guardarConfiguracion).not.toHaveBeenCalled();
+  });
+
+  // Ver el enlace mientras se escribe hace evidente el problema.
+  it("muestra cómo va a quedar cuando está bien", async () => {
+    render(<AdminPagoView />);
+    const campo = await screen.findByLabelText("WhatsApp de atención");
+
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "+51 974 732 528");
+
+    expect(await screen.findByText("wa.me/51974732528")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled();
+  });
+
+  // Vacío es válido: el campo es opcional, solo que sin él no hay botón.
+  it("vacío no se marca como error", async () => {
+    render(<AdminPagoView />);
+    const campo = await screen.findByLabelText("WhatsApp de atención");
+
+    await userEvent.clear(campo);
+
+    expect(screen.queryByText(/Falta el código/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled();
   });
 });

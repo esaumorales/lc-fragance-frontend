@@ -11,6 +11,7 @@ import type { ConfiguracionDePago } from "@/lib/types";
 import { Input } from "@/components/atoms/Input";
 import { Button } from "@/components/atoms/Button";
 import { Icon } from "@/components/atoms/Icon";
+import { enlaceDeWhatsapp, motivoDelTelefono } from "@/lib/telefono";
 
 const VACIO = {
   titular: "",
@@ -116,6 +117,8 @@ export function AdminPagoView() {
   if (cargando) return <p className="text-sm text-muted-foreground">Cargando…</p>;
 
   const sinCobro = !form.yape.trim() && !form.cuenta.trim() && !form.cci.trim();
+  const problemaDelWhatsapp = motivoDelTelefono(form.whatsapp);
+  const enlace = enlaceDeWhatsapp(form.whatsapp);
   const sinEntrega = !form.recojoActivo && !form.deliveryActivo;
 
   return (
@@ -231,10 +234,20 @@ export function AdminPagoView() {
           value={form.whatsapp}
           onChange={(e) => cambiar("whatsapp", e.target.value)}
         />
-        <small className="text-xs text-muted-foreground">
-          Es el número al que escribe quien compra desde el carrito. Poné el código del país
-          adelante. Sin esto, el botón de WhatsApp no aparece.
-        </small>
+        {/* El enlace a la vista: asi el error de olvidar el codigo de pais
+            se nota al escribirlo y no cuando un cliente no puede escribir. */}
+        {problemaDelWhatsapp ? (
+          <small className="text-xs text-red-400">{problemaDelWhatsapp}</small>
+        ) : enlace ? (
+          <small className="text-xs text-muted-foreground">
+            Va a quedar así: <span className="text-primary">{enlace}</span>
+          </small>
+        ) : (
+          <small className="text-xs text-muted-foreground">
+            Es el número al que escribe quien compra desde el carrito. Sin esto, el botón de
+            WhatsApp no aparece.
+          </small>
+        )}
       </section>
 
       <section className="surface flex flex-col gap-4 p-5">
@@ -255,7 +268,7 @@ export function AdminPagoView() {
       {aviso ? <p className="text-sm text-primary">{aviso}</p> : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="primary" disabled={guardando}>
+        <Button type="submit" variant="primary" disabled={guardando || Boolean(problemaDelWhatsapp)}>
           {guardando ? "Guardando…" : "Guardar"}
         </Button>
         <Button type="button" variant="ghost" disabled={guardando} onClick={borrar}>
