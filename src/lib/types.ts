@@ -103,6 +103,8 @@ export type ConfiguracionDePago = {
   banco: string | null;
   cuenta: string | null;
   cci: string | null;
+  /** El numero de atencion de la tienda, al que escribe quien compra. */
+  whatsapp: string | null;
   correoDeAvisos: string | null;
   recojoActivo: boolean;
   deliveryActivo: boolean;

@@ -23,6 +23,7 @@ const CONFIG: ConfiguracionDePago = {
   banco: "BCP",
   cuenta: "19103537229057",
   cci: "00219110353722905752",
+  whatsapp: "+51 974 732 528",
   correoDeAvisos: "tienda@example.com",
   recojoActivo: true,
   deliveryActivo: true,
@@ -139,5 +140,35 @@ describe("el aviso de que no se puede cobrar", () => {
     await screen.findByDisplayValue("925064242");
 
     expect(screen.queryByText(/checkout queda bloqueado/)).not.toBeInTheDocument();
+  });
+});
+
+describe("el WhatsApp de atención", () => {
+  // Antes salía del perfil de algún admin: el número público de la tienda
+  // cambiaba solo cuando esa persona editaba su teléfono.
+  it("se carga desde la configuración, no desde un perfil", async () => {
+    render(<AdminPagoView />);
+
+    expect(await screen.findByDisplayValue("+51 974 732 528")).toBeInTheDocument();
+  });
+
+  it("se guarda junto con el resto", async () => {
+    render(<AdminPagoView />);
+    const campo = await screen.findByLabelText("WhatsApp de atención");
+
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "+51 999 111 222");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => expect(api.guardarConfiguracion).toHaveBeenCalled());
+    expect(api.guardarConfiguracion.mock.calls[0]![1].whatsapp).toBe("+51 999 111 222");
+  });
+
+  // Hay que avisar que sin número desaparece el botón, no dejar que lo
+  // descubran cuando un cliente no puede escribir.
+  it("avisa qué pasa si queda vacío", async () => {
+    render(<AdminPagoView />);
+
+    expect(await screen.findByText(/el botón de WhatsApp no aparece/)).toBeInTheDocument();
   });
 });

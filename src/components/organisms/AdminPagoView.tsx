@@ -18,6 +18,7 @@ const VACIO = {
   banco: "",
   cuenta: "",
   cci: "",
+  whatsapp: "",
   correoDeAvisos: "",
   recojoActivo: true,
   deliveryActivo: true,
@@ -33,6 +34,7 @@ function desdeLaApi(config: ConfiguracionDePago): Formulario {
     banco: config.banco ?? "",
     cuenta: config.cuenta ?? "",
     cci: config.cci ?? "",
+    whatsapp: config.whatsapp ?? "",
     correoDeAvisos: config.correoDeAvisos ?? "",
     recojoActivo: config.recojoActivo,
     deliveryActivo: config.deliveryActivo,
@@ -219,6 +221,20 @@ export function AdminPagoView() {
             En 0 el delivery es gratis. Es un monto fijo para todos los pedidos.
           </small>
         </label>
+      </section>
+
+      <section className="surface flex flex-col gap-4 p-5">
+        <h2 className="text-xs uppercase tracking-[0.2em] text-primary">WhatsApp de atención</h2>
+        <Input
+          aria-label="WhatsApp de atención"
+          placeholder="+51 9XX XXX XXX"
+          value={form.whatsapp}
+          onChange={(e) => cambiar("whatsapp", e.target.value)}
+        />
+        <small className="text-xs text-muted-foreground">
+          Es el número al que escribe quien compra desde el carrito. Poné el código del país
+          adelante. Sin esto, el botón de WhatsApp no aparece.
+        </small>
       </section>
 
       <section className="surface flex flex-col gap-4 p-5">
